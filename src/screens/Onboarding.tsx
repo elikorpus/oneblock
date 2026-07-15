@@ -20,7 +20,7 @@ import { Button } from '../components/Button';
 import { Chip } from '../components/Chip';
 import { Input } from '../components/Input';
 import { ONBOARDING_INTERESTS, TENURE } from '../data/constants';
-import { FamilyMember } from '../data/types';
+import { FamilyMember, House } from '../data/types';
 import { supabase } from '../lib/supabase';
 import { AuthStackParamList } from '../navigation/types';
 import { useAppState } from '../state/AppStateContext';
@@ -29,11 +29,12 @@ import { theme } from '../theme';
 type Props = NativeStackScreenProps<AuthStackParamList, 'Onboarding'>;
 
 const CONFETTI = ['🎉', '👋', '🌮', '🐶', '🎾', '☕', '📚', '🌱', '🏡', '✨', '🎉', '👋'];
+const TOTAL_STEPS = 5;
 
 function Dots({ step }: { step: number }) {
   return (
     <View style={styles.dotsRow}>
-      {[0, 1, 2, 3].map((i) => (
+      {Array.from({ length: TOTAL_STEPS }, (_, i) => i).map((i) => (
         <View
           key={i}
           style={[
@@ -77,19 +78,20 @@ function ConfettiPiece({ index }: { index: number }) {
 }
 
 export function OnboardingScreen({ navigation }: Props) {
-  const { completeSignup } = useAppState();
+  const { completeSignup, listOpenHouses } = useAppState();
   const [step, setStep] = useState(0);
   const [code, setCode] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [checkingCode, setCheckingCode] = useState(false);
   const [codeError, setCodeError] = useState('');
+  const [openHouses, setOpenHouses] = useState<House[]>([]);
+  const [selectedHouseId, setSelectedHouseId] = useState<string | null>(null);
   const [about, setAbout] = useState({
     firstName: '',
     lastName: '',
     age: '',
     profession: '',
-    street: '',
     yearsIn: 'Just moved in',
     bio: '',
   });
@@ -106,18 +108,25 @@ export function OnboardingScreen({ navigation }: Props) {
 
   const emailOk = /\S+@\S+\.\S+/.test(email.trim());
   const codeOk = code.trim().length >= 4 && emailOk && password.length >= 6;
-  const aboutOk = about.firstName.trim().length > 0 && about.street.trim().length > 0;
+  const aboutOk = about.firstName.trim().length > 0;
 
   const joinStep = async () => {
     if (!codeOk || checkingCode) return;
     setCheckingCode(true);
     setCodeError('');
     const { data, error } = await supabase.rpc('validate_signup_key', { key: code.trim() });
-    setCheckingCode(false);
     if (error || !data || data.length === 0) {
+      setCheckingCode(false);
       setCodeError("That code doesn't match a Neighborly community yet.");
       return;
     }
+    const houses = await listOpenHouses(code.trim());
+    setCheckingCode(false);
+    if (houses.length === 0) {
+      setCodeError('Every address in this community has already been claimed.');
+      return;
+    }
+    setOpenHouses(houses);
     setStep(1);
   };
 
@@ -129,7 +138,7 @@ export function OnboardingScreen({ navigation }: Props) {
   };
 
   const finish = async () => {
-    if (finishing) return;
+    if (finishing || !selectedHouseId) return;
     setFinishing(true);
     setFinishError('');
     try {
@@ -140,7 +149,7 @@ export function OnboardingScreen({ navigation }: Props) {
         firstName: about.firstName || 'Neighbor',
         lastName: about.lastName,
         age: about.age,
-        street: about.street,
+        houseId: selectedHouseId,
         profession: about.profession,
         yearsIn: about.yearsIn,
         bio: about.bio,
@@ -156,7 +165,7 @@ export function OnboardingScreen({ navigation }: Props) {
   return (
     <SafeAreaView style={styles.screen}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        {step < 4 && (
+        {step < TOTAL_STEPS && (
           <View style={styles.header}>
             <View style={styles.headerRow}>
               <Text style={styles.wordmark}>
@@ -166,7 +175,9 @@ export function OnboardingScreen({ navigation }: Props) {
                 <Text style={styles.backText}>Back</Text>
               </Pressable>
             </View>
-            <Text style={styles.stepText}>Step {step + 1} of 4</Text>
+            <Text style={styles.stepText}>
+              Step {step + 1} of {TOTAL_STEPS}
+            </Text>
             <Dots step={step} />
           </View>
         )}
@@ -227,6 +238,37 @@ export function OnboardingScreen({ navigation }: Props) {
         )}
 
         {step === 1 && (
+          <ScrollView contentContainerStyle={[styles.stepContent, { flexGrow: 1 }]} keyboardShouldPersistTaps="handled">
+            <Text style={styles.h1Sm}>Which house{'\n'}is yours?</Text>
+            <Text style={styles.lead}>Only real, unclaimed addresses in this community show up here.</Text>
+            <View style={{ marginTop: 16 }}>
+              {openHouses.map((h) => {
+                const active = selectedHouseId === h.id;
+                return (
+                  <Pressable
+                    key={h.id}
+                    onPress={() => setSelectedHouseId(h.id)}
+                    style={[styles.houseRow, active && { borderColor: theme.colors.grass, backgroundColor: theme.colors.grassPale }]}
+                  >
+                    <MapPin size={16} color={active ? theme.colors.grassDeep : theme.colors.inkSoft} />
+                    <Text style={[styles.houseText, active && { color: theme.colors.grassDeep, fontFamily: theme.font.bodyBold }]}>{h.address}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+            <View style={{ marginTop: 'auto', paddingTop: 16 }}>
+              <Button
+                disabled={!selectedHouseId}
+                onPress={() => setStep(2)}
+                trailing={<ArrowRight size={18} color={selectedHouseId ? '#fff' : theme.colors.inkSoft} />}
+              >
+                Next
+              </Button>
+            </View>
+          </ScrollView>
+        )}
+
+        {step === 2 && (
           <ScrollView contentContainerStyle={styles.stepContent} keyboardShouldPersistTaps="handled">
             <Text style={styles.h1Sm}>Tell the street{'\n'}about you.</Text>
             <Text style={styles.lead}>
@@ -248,9 +290,8 @@ export function OnboardingScreen({ navigation }: Props) {
                 <Input label="What you do" value={about.profession} onChangeText={(v) => setAbout({ ...about, profession: v })} placeholder="Artist · brand founder" />
               </View>
             </View>
-            <Input label="Street address" value={about.street} onChangeText={(v) => setAbout({ ...about, street: v })} placeholder="4413 Wren Ct" />
             <View style={{ marginBottom: 12 }}>
-              <Text style={styles.fieldLabel}>How long in Cypress Bend?</Text>
+              <Text style={styles.fieldLabel}>How long in the neighborhood?</Text>
               <View style={styles.chipWrap}>
                 {TENURE.map((t) => (
                   <Chip key={t} active={about.yearsIn === t} onPress={() => setAbout({ ...about, yearsIn: t })}>
@@ -261,14 +302,14 @@ export function OnboardingScreen({ navigation }: Props) {
             </View>
             <Input label="Bio (one good line)" value={about.bio} onChangeText={(v) => setAbout({ ...about, bio: v })} placeholder="Chronic borrower of folding tables." />
             <View style={{ marginTop: 8 }}>
-              <Button disabled={!aboutOk} onPress={() => setStep(2)} trailing={<ArrowRight size={18} color={aboutOk ? '#fff' : theme.colors.inkSoft} />}>
+              <Button disabled={!aboutOk} onPress={() => setStep(3)} trailing={<ArrowRight size={18} color={aboutOk ? '#fff' : theme.colors.inkSoft} />}>
                 Next
               </Button>
             </View>
           </ScrollView>
         )}
 
-        {step === 2 && (
+        {step === 3 && (
           <ScrollView contentContainerStyle={[styles.stepContent, { flexGrow: 1 }]} keyboardShouldPersistTaps="handled">
             <Text style={styles.h1Sm}>Who's in{'\n'}your house?</Text>
             <Text style={styles.lead}>
@@ -322,14 +363,14 @@ export function OnboardingScreen({ navigation }: Props) {
               </Pressable>
             )}
             <View style={{ marginTop: 'auto', paddingTop: 16 }}>
-              <Button onPress={() => setStep(3)} trailing={<ArrowRight size={18} color="#fff" />}>
+              <Button onPress={() => setStep(4)} trailing={<ArrowRight size={18} color="#fff" />}>
                 {family.length > 0 ? 'Next' : 'Skip for now'}
               </Button>
             </View>
           </ScrollView>
         )}
 
-        {step === 3 && (
+        {step === 4 && (
           <ScrollView contentContainerStyle={[styles.stepContent, { flexGrow: 1 }]} keyboardShouldPersistTaps="handled">
             <Text style={styles.h1Sm}>What are{'\n'}you into?</Text>
             <Text style={styles.lead}>Powers Neighbor Match. Only shown to matched neighbors.</Text>
@@ -350,7 +391,7 @@ export function OnboardingScreen({ navigation }: Props) {
                 variant="dark"
                 onPress={() => {
                   Keyboard.dismiss();
-                  setStep(4);
+                  setStep(5);
                 }}
               >
                 Finish
@@ -359,7 +400,7 @@ export function OnboardingScreen({ navigation }: Props) {
           </ScrollView>
         )}
 
-        {step === 4 && (
+        {step === 5 && (
           <View style={styles.confettiScreen}>
             {CONFETTI.map((_, i) => (
               <ConfettiPiece key={i} index={i} />
@@ -429,6 +470,19 @@ const styles = StyleSheet.create({
   },
   hintRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 16, justifyContent: 'center' },
   hintText: { fontSize: 13, color: theme.colors.inkSoft, fontFamily: theme.font.bodySemibold },
+  houseRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: theme.colors.card,
+    borderWidth: theme.border.width,
+    borderColor: theme.colors.line,
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    marginBottom: 10,
+  },
+  houseText: { fontSize: 15, fontFamily: theme.font.bodySemibold, color: theme.colors.ink },
   errorText: { fontSize: 12.5, color: theme.colors.red, fontFamily: theme.font.bodySemibold, textAlign: 'center' },
   rowGap: { flexDirection: 'row', gap: 12 },
   fieldLabel: { fontSize: 11, fontFamily: theme.font.bodyBold, color: theme.colors.inkSoft, letterSpacing: theme.label.tracking, textTransform: 'uppercase' },

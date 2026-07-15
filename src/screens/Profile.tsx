@@ -110,7 +110,7 @@ export function ProfileScreen({ navigation }: Props) {
             <Input label="Age" value={draft.age} onChangeText={(t) => setDraft({ ...draft, age: t })} keyboardType="number-pad" />
             <Input label="What you do" value={draft.profession} onChangeText={(t) => setDraft({ ...draft, profession: t })} />
             <View style={{ marginBottom: 12 }}>
-              <Text style={styles.fieldLabel}>Time in Cypress Bend</Text>
+              <Text style={styles.fieldLabel}>Time in the neighborhood</Text>
               <View style={styles.chipWrap}>
                 {TENURE.map((t) => (
                   <Chip key={t} active={draft.yearsIn === t} onPress={() => setDraft({ ...draft, yearsIn: t })}>

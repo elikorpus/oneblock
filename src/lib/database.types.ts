@@ -40,9 +40,17 @@ export type FamilyMemberRow = {
 export type HouseRow = {
   id: string;
   community_id: string;
-  x: number;
-  y: number;
+  address: string;
+  latitude: number;
+  longitude: number;
   resident_profile_id: string | null;
+};
+
+export type OpenHouseRow = {
+  house_id: string;
+  address: string;
+  latitude: number;
+  longitude: number;
 };
 
 export type ClubRow = {
@@ -200,13 +208,17 @@ export type Database = {
           p_first_name: string;
           p_last_name: string;
           p_age: string;
-          p_street: string;
+          p_house_id: string;
           p_profession: string;
           p_years_in: string;
           p_bio: string;
           p_interests: string[];
         };
         Returns: void;
+      };
+      list_open_houses: {
+        Args: { key: string };
+        Returns: { house_id: string; address: string; latitude: number; longitude: number }[];
       };
       current_community_id: { Args: Record<string, never>; Returns: string };
     };

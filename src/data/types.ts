@@ -136,8 +136,10 @@ export type Announcement = {
 
 export type House = {
   id: string;
-  x: number;
-  y: number;
+  address: string;
+  latitude: number;
+  longitude: number;
+  claimed: boolean;
   you?: boolean;
 };
 

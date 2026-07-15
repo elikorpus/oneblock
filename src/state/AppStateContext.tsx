@@ -91,13 +91,14 @@ type AppState = {
     firstName: string;
     lastName: string;
     age: string;
-    street: string;
+    houseId: string;
     profession: string;
     yearsIn: string;
     bio: string;
     interests: string[];
     family: FamilyMember[];
   }) => Promise<void>;
+  listOpenHouses: (signupKey: string) => Promise<House[]>;
 
   // profile
   profile: Profile;
@@ -301,7 +302,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       firstName: string;
       lastName: string;
       age: string;
-      street: string;
+      houseId: string;
       profession: string;
       yearsIn: string;
       bio: string;
@@ -319,7 +320,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
         p_first_name: args.firstName,
         p_last_name: args.lastName,
         p_age: args.age,
-        p_street: args.street,
+        p_house_id: args.houseId,
         p_profession: args.profession,
         p_years_in: args.yearsIn,
         p_bio: args.bio,
@@ -335,6 +336,18 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     },
     [refreshAll]
   );
+
+  const listOpenHouses = useCallback(async (signupKey: string): Promise<House[]> => {
+    const { data, error } = await supabase.rpc('list_open_houses', { key: signupKey });
+    if (error || !data) return [];
+    return (data as { house_id: string; address: string; latitude: number; longitude: number }[]).map((h) => ({
+      id: h.house_id,
+      address: h.address,
+      latitude: h.latitude,
+      longitude: h.longitude,
+      claimed: false,
+    }));
+  }, []);
 
   const profilesById = useMemo(() => {
     const map = new Map<string, ProfileRow>();
@@ -419,7 +432,15 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   }, [directory, wavedIds]);
 
   const houses: House[] = useMemo(
-    () => houseRows.map((h) => ({ id: h.id, x: h.x, y: h.y, you: h.id === myRow?.house_id })),
+    () =>
+      houseRows.map((h) => ({
+        id: h.id,
+        address: h.address,
+        latitude: h.latitude,
+        longitude: h.longitude,
+        claimed: h.resident_profile_id !== null,
+        you: h.id === myRow?.house_id,
+      })),
     [houseRows, myRow]
   );
 
@@ -762,6 +783,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       hasProfile: !!myRow,
       logout,
       completeSignup,
+      listOpenHouses,
       profile,
       setProfile,
       addFamilyMember,
@@ -800,6 +822,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       myRow,
       logout,
       completeSignup,
+      listOpenHouses,
       profile,
       setProfile,
       addFamilyMember,
