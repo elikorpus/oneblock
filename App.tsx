@@ -1,11 +1,4 @@
-import { useFonts as useFrauncesFonts, Fraunces_500Medium, Fraunces_600SemiBold, Fraunces_700Bold } from '@expo-google-fonts/fraunces';
-import {
-  useFonts as useInstrumentSansFonts,
-  InstrumentSans_400Regular,
-  InstrumentSans_500Medium,
-  InstrumentSans_600SemiBold,
-  InstrumentSans_700Bold,
-} from '@expo-google-fonts/instrument-sans';
+import { useFonts } from 'expo-font';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import React, { useCallback, useEffect } from 'react';
@@ -19,14 +12,16 @@ import { theme } from './src/theme';
 SplashScreen.preventAutoHideAsync();
 
 export default function App() {
-  const [frauncesLoaded] = useFrauncesFonts({ Fraunces_500Medium, Fraunces_600SemiBold, Fraunces_700Bold });
-  const [instrumentSansLoaded] = useInstrumentSansFonts({
-    InstrumentSans_400Regular,
-    InstrumentSans_500Medium,
-    InstrumentSans_600SemiBold,
-    InstrumentSans_700Bold,
+  // Load all 7 custom fonts locally from your assets folder
+  const [fontsLoaded] = useFonts({
+    'Fraunces_500Medium': require('./assets/fonts/Fraunces_500Medium.ttf'),
+    'Fraunces_600SemiBold': require('./assets/fonts/Fraunces_600SemiBold.ttf'),
+    'Fraunces_700Bold': require('./assets/fonts/Fraunces_700Bold.ttf'),
+    'InstrumentSans_400Regular': require('./assets/fonts/InstrumentSans_400Regular.ttf'),
+    'InstrumentSans_500Medium': require('./assets/fonts/InstrumentSans_500Medium.ttf'),
+    'InstrumentSans_600SemiBold': require('./assets/fonts/InstrumentSans_600SemiBold.ttf'),
+    'InstrumentSans_700Bold': require('./assets/fonts/InstrumentSans_700Bold.ttf'),
   });
-  const fontsLoaded = frauncesLoaded && instrumentSansLoaded;
 
   useEffect(() => {
     if (fontsLoaded) {

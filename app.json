@@ -7,7 +7,8 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.anonymous.neighborly"
     },
     "android": {
       "adaptiveIcon": {
@@ -19,11 +20,15 @@
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
     },
     "plugins": [
       "expo-font",
       "expo-splash-screen"
-    ]
+    ],
+    "experiments": {
+      "baseUrl": "/neighborly"
+    }
   }
 }
