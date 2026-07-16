@@ -1,0 +1,59 @@
+import React from 'react';
+import { StyleSheet, Text, View } from 'react-native';
+import { formatHM24, formatISODate, parseHM24, parseISODate } from '../lib/dateTimeFormat';
+import { theme } from '../theme';
+
+export type DateTimeFieldProps = {
+  label: string;
+  mode: 'date' | 'time';
+  value: Date | null;
+  onChange: (date: Date) => void;
+  placeholder?: string;
+};
+
+const inputStyle: React.CSSProperties = {
+  fontFamily: theme.font.bodyRegular,
+  fontSize: 15,
+  color: theme.colors.ink,
+  padding: '10px 12px',
+  borderRadius: theme.radius.md,
+  border: `1.5px solid ${theme.colors.line}`,
+  backgroundColor: theme.colors.card,
+  outline: 'none',
+  width: '100%',
+  boxSizing: 'border-box',
+};
+
+/** The browser's own native date/time picker — same guarantee as the native version (an
+ * <input type="date"/"time"> physically can't hold a malformed value). */
+export function DateTimeField({ label, mode, value, onChange }: DateTimeFieldProps) {
+  const stringValue = value ? (mode === 'date' ? formatISODate(value) : formatHM24(value)) : '';
+
+  return (
+    <View style={styles.wrap}>
+      <Text style={styles.label}>{label}</Text>
+      <input
+        type={mode}
+        value={stringValue}
+        onChange={(e) => {
+          const raw = e.target.value;
+          if (!raw) return;
+          onChange(mode === 'date' ? parseISODate(raw) : parseHM24(raw, value ?? new Date()));
+        }}
+        style={inputStyle}
+      />
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  wrap: { marginBottom: 12 },
+  label: {
+    fontFamily: theme.font.bodyBold,
+    fontSize: 11,
+    letterSpacing: theme.label.tracking,
+    textTransform: 'uppercase',
+    color: theme.colors.inkSoft,
+    marginBottom: 4,
+  },
+});

@@ -1,6 +1,7 @@
-import { Bot, Landmark, Plus, Send } from 'lucide-react-native';
+import { ArrowLeft, Bot, Landmark, Plus, Send } from 'lucide-react-native';
 import React, { useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Avatar } from '../components/Avatar';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { Chip } from '../components/Chip';
@@ -11,7 +12,7 @@ import { useAppState } from '../state/AppStateContext';
 import { theme } from '../theme';
 import { EmptyTab } from './empty';
 
-type Message = { from: 'you' | 'them'; text: string };
+type DisplayMessage = { from: 'you' | 'them'; text: string };
 type Mode = 'board' | 'ai' | 'announcements' | 'tools';
 
 const AI_PLACEHOLDER =
@@ -25,9 +26,9 @@ const ENTITY_LABEL: Record<string, string> = {
 };
 
 export function HOAScreen() {
-  const { boardMessages, sendBoardMessage, announcements, addAnnouncement, communityName, isBoardMember, moderationLog } = useAppState();
+  const { boardThreads, sendBoardMessage, announcements, addAnnouncement, communityName, isBoardMember, moderationLog } = useAppState();
   const [mode, setMode] = useState<Mode>('board');
-  const [ai, setAi] = useState<Message[]>([
+  const [ai, setAi] = useState<DisplayMessage[]>([
     {
       from: 'them',
       text: 'Hi! I know your covenants inside out. Ask me anything — fences, paint colors, RV parking, pool hours, fine appeals…',
@@ -38,24 +39,44 @@ export function HOAScreen() {
   const [showEmpty, setShowEmpty] = useState(true);
   const [composingAnnouncement, setComposingAnnouncement] = useState(false);
   const [announcementDraft, setAnnouncementDraft] = useState({ title: '', body: '' });
+  const [openThreadId, setOpenThreadId] = useState<string | null>(null);
 
-  if (boardMessages.length === 0 && announcements.length === 0 && showEmpty)
+  if (boardThreads.length === 0 && announcements.length === 0 && showEmpty)
     return (
       <EmptyTab config={buildEmptyStates(communityName).hoa} communityName={communityName} onCta={() => setShowEmpty(false)} />
     );
 
-  const msgs = mode === 'board' ? boardMessages : ai;
+  const myThread = !isBoardMember ? (boardThreads[0] ?? null) : null;
+  const openThread = isBoardMember ? (boardThreads.find((t) => t.residentId === openThreadId) ?? null) : null;
+  const showInbox = mode === 'board' && isBoardMember && !openThread;
+
+  let msgs: DisplayMessage[] = [];
+  let onSend: (value: string) => void = () => {};
+  let placeholder = 'Share a concern with the board…';
+
+  if (mode === 'ai') {
+    msgs = ai;
+    placeholder = 'Can I park an RV overnight?';
+    onSend = (value) => {
+      setAi((m) => [...m, { from: 'you', text: value }]);
+      setTimeout(() => setAi((m) => [...m, { from: 'them', text: AI_PLACEHOLDER }]), 500);
+    };
+  } else if (mode === 'board' && openThread) {
+    msgs = openThread.messages.map((m) => ({ from: m.fromBoard ? 'you' : 'them', text: m.text }));
+    placeholder = `Reply to ${openThread.residentName.split(' ')[0]}…`;
+    onSend = (value) => sendBoardMessage(value, openThread.residentId);
+  } else if (mode === 'board' && myThread) {
+    msgs = myThread.messages.map((m) => ({ from: m.fromBoard ? 'them' : 'you', text: m.text }));
+    onSend = (value) => sendBoardMessage(value);
+  } else if (mode === 'board') {
+    onSend = (value) => sendBoardMessage(value);
+  }
 
   const send = () => {
     const value = text.trim();
     if (!value) return;
     setText('');
-    if (mode === 'board') {
-      sendBoardMessage(value);
-    } else if (mode === 'ai') {
-      setAi((m) => [...m, { from: 'you', text: value }]);
-      setTimeout(() => setAi((m) => [...m, { from: 'them', text: AI_PLACEHOLDER }]), 500);
-    }
+    onSend(value);
   };
 
   return (
@@ -67,8 +88,14 @@ export function HOAScreen() {
           <Chip active={mode === 'announcements'} onPress={() => setMode('announcements')}>
             📣 Announcements
           </Chip>
-          <Chip active={mode === 'board'} onPress={() => setMode('board')}>
-            💬 Message the board
+          <Chip
+            active={mode === 'board'}
+            onPress={() => {
+              setMode('board');
+              setOpenThreadId(null);
+            }}
+          >
+            💬 {isBoardMember ? 'Messages from residents' : 'Message the board'}
           </Chip>
           <Chip active={mode === 'ai'} onPress={() => setMode('ai')}>
             🤖 Rules assistant
@@ -156,6 +183,28 @@ export function HOAScreen() {
             </Card>
           ))}
         </ScrollView>
+      ) : showInbox ? (
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.messages}>
+          <SectionLabel>Messages from residents</SectionLabel>
+          {boardThreads.length === 0 && <Text style={styles.emptyAnnouncements}>No one has messaged the board yet.</Text>}
+          {boardThreads.map((t) => {
+            const last = t.messages[t.messages.length - 1];
+            return (
+              <Pressable key={t.residentId} onPress={() => setOpenThreadId(t.residentId)} style={styles.threadRow}>
+                <Avatar initials={t.initials} bg={t.bg} size={40} tilt={-3} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.threadName}>{t.residentName}</Text>
+                  {!!last && (
+                    <Text style={styles.threadPreview} numberOfLines={1}>
+                      {last.fromBoard ? 'You: ' : ''}
+                      {last.text}
+                    </Text>
+                  )}
+                </View>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
       ) : (
         <>
           <ScrollView
@@ -164,6 +213,12 @@ export function HOAScreen() {
             contentContainerStyle={styles.messages}
             onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: true })}
           >
+            {mode === 'board' && openThread && (
+              <Pressable onPress={() => setOpenThreadId(null)} style={styles.backRow}>
+                <ArrowLeft size={14} color={theme.colors.inkSoft} />
+                <Text style={styles.backText}>Back to inbox · {openThread.residentName}</Text>
+              </Pressable>
+            )}
             {mode === 'ai' && (
               <View style={styles.aiNote}>
                 <Bot size={13} color={theme.colors.grassDeep} />
@@ -171,25 +226,25 @@ export function HOAScreen() {
               </View>
             )}
             {msgs.map((m, i) => (
-          <View key={i} style={[styles.msgRow, { justifyContent: m.from === 'you' ? 'flex-end' : 'flex-start' }]}>
-            {m.from === 'them' && (
-              <View style={[styles.avatarChip, { backgroundColor: mode === 'ai' ? theme.colors.ink : theme.colors.lilac }]}>
-                {mode === 'ai' ? <Bot size={14} color={theme.colors.paper} /> : <Landmark size={13} color={theme.colors.ink} />}
+              <View key={i} style={[styles.msgRow, { justifyContent: m.from === 'you' ? 'flex-end' : 'flex-start' }]}>
+                {m.from === 'them' && (
+                  <View style={[styles.avatarChip, { backgroundColor: mode === 'ai' ? theme.colors.ink : theme.colors.lilac }]}>
+                    {mode === 'ai' ? <Bot size={14} color={theme.colors.paper} /> : <Landmark size={13} color={theme.colors.ink} />}
+                  </View>
+                )}
+                <View
+                  style={[
+                    styles.bubble,
+                    {
+                      backgroundColor: m.from === 'you' ? theme.colors.grass : theme.colors.card,
+                      borderWidth: m.from === 'you' ? 0 : theme.border.width,
+                    },
+                  ]}
+                >
+                  <Text style={{ color: m.from === 'you' ? '#fff' : theme.colors.ink, fontSize: 14, lineHeight: 14 * 1.45 }}>{m.text}</Text>
+                </View>
               </View>
-            )}
-            <View
-              style={[
-                styles.bubble,
-                {
-                  backgroundColor: m.from === 'you' ? theme.colors.grass : theme.colors.card,
-                  borderWidth: m.from === 'you' ? 0 : theme.border.width,
-                },
-              ]}
-            >
-              <Text style={{ color: m.from === 'you' ? '#fff' : theme.colors.ink, fontSize: 14, lineHeight: 14 * 1.45 }}>{m.text}</Text>
-            </View>
-          </View>
-        ))}
+            ))}
           </ScrollView>
 
           <View style={styles.inputRow}>
@@ -197,7 +252,7 @@ export function HOAScreen() {
               value={text}
               onChangeText={setText}
               onSubmitEditing={send}
-              placeholder={mode === 'board' ? 'Share a concern with the board…' : 'Can I park an RV overnight?'}
+              placeholder={placeholder}
               placeholderTextColor={theme.colors.inkSoft}
               style={styles.input}
             />
@@ -243,6 +298,18 @@ const styles = StyleSheet.create({
   announcementTitle: { fontSize: 15, fontFamily: theme.font.bodyBold, color: theme.colors.ink },
   announcementBody: { fontSize: 13.5, color: theme.colors.ink, marginTop: 4, fontFamily: theme.font.bodyRegular, lineHeight: 13.5 * 1.4 },
   announcementMeta: { fontSize: 11.5, color: theme.colors.inkSoft, fontFamily: theme.font.bodySemibold, marginTop: 8 },
+  threadRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 12,
+    borderBottomWidth: theme.border.width,
+    borderBottomColor: theme.colors.line,
+  },
+  threadName: { fontSize: 14.5, fontFamily: theme.font.bodyBold, color: theme.colors.ink },
+  threadPreview: { fontSize: 12.5, color: theme.colors.inkSoft, fontFamily: theme.font.bodyRegular, marginTop: 2 },
+  backRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 14 },
+  backText: { fontSize: 12.5, fontFamily: theme.font.bodyBold, color: theme.colors.inkSoft },
   aiNote: {
     backgroundColor: theme.colors.grassPale,
     borderRadius: 12,

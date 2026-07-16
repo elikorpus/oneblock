@@ -1,9 +1,10 @@
-import { Calendar, Check, ChevronRight } from 'lucide-react-native';
-import React from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Calendar, Check, ChevronRight, Send, Trash2 } from 'lucide-react-native';
+import React, { useState } from 'react';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Avatar } from '../components/Avatar';
 import { Card } from '../components/Card';
 import { PopIn } from '../components/PopIn';
+import { SectionLabel } from '../components/SectionLabel';
 import { buildEmptyStates } from '../data/emptyStates';
 import { useAppNavigation } from '../navigation/useAppNavigation';
 import { useAppState } from '../state/AppStateContext';
@@ -12,21 +13,48 @@ import { EmptyTab } from './empty';
 
 export function TodayScreen() {
   const navigation = useAppNavigation();
-  const { profile, events, eventRsvps, toggleEventRsvp, directory, wavedIds, sendWave, notifications, communityName } = useAppState();
+  const {
+    profile,
+    events,
+    eventRsvps,
+    toggleEventRsvp,
+    directory,
+    wavedIds,
+    sendWave,
+    notifications,
+    communityName,
+    posts,
+    addPost,
+    isBoardMember,
+    deletePost,
+  } = useAppState();
+  const [showEmpty, setShowEmpty] = useState(true);
+  const [composing, setComposing] = useState(false);
+  const [draft, setDraft] = useState('');
 
   const upcoming = events.slice(0, 3);
   const newNeighbor = directory.find((p) => !wavedIds.includes(p.id));
   const recentNotifications = notifications.slice(0, 2);
 
-  if (upcoming.length === 0 && !newNeighbor && recentNotifications.length === 0) {
+  if (upcoming.length === 0 && !newNeighbor && recentNotifications.length === 0 && posts.length === 0 && showEmpty) {
     return (
       <EmptyTab
         config={buildEmptyStates(communityName).today}
         communityName={communityName}
-        onCta={() => navigation.navigate('Tabs', { screen: 'Ask' })}
+        onCta={() => {
+          setShowEmpty(false);
+          setComposing(true);
+        }}
       />
     );
   }
+
+  const submitPost = async () => {
+    if (!draft.trim()) return;
+    await addPost(draft.trim());
+    setDraft('');
+    setComposing(false);
+  };
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
@@ -38,6 +66,38 @@ export function TodayScreen() {
           </Text>
         </Text>
       </View>
+
+      {!composing ? (
+        <Pressable onPress={() => setComposing(true)} style={styles.shareBtn}>
+          <Text style={styles.shareBtnText}>Share something with {communityName || 'your neighborhood'}…</Text>
+        </Pressable>
+      ) : (
+        <Card style={{ marginBottom: 16 }}>
+          <TextInput
+            value={draft}
+            onChangeText={setDraft}
+            placeholder="What's on your mind?"
+            placeholderTextColor={theme.colors.inkSoft}
+            multiline
+            style={styles.composeInput}
+          />
+          <View style={styles.rowGap}>
+            <Pressable onPress={submitPost} style={styles.postBtn}>
+              <Send size={15} color="#fff" />
+              <Text style={styles.postBtnText}>Post</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => {
+                setComposing(false);
+                setDraft('');
+              }}
+              style={styles.cancelBtn}
+            >
+              <Text style={styles.cancelBtnText}>Cancel</Text>
+            </Pressable>
+          </View>
+        </Card>
+      )}
 
       {upcoming.map((e, i) => {
         const rsvp = eventRsvps[e.id];
@@ -118,6 +178,38 @@ export function TodayScreen() {
           </Pressable>
         </PopIn>
       ))}
+
+      {posts.length > 0 && (
+        <View style={{ marginTop: 8 }}>
+          <SectionLabel>From your neighbors</SectionLabel>
+          {posts.map((p) => (
+            <Card key={p.id} style={{ marginBottom: 12 }}>
+              <View style={styles.rowCenter}>
+                <Avatar initials={p.initials} bg={p.bg} size={36} tilt={3} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.postWho}>
+                    {p.who} <Text style={styles.postWhen}>· {p.createdAt}</Text>
+                  </Text>
+                  <Text style={styles.postText}>{p.text}</Text>
+                </View>
+                {isBoardMember && (
+                  <Pressable
+                    hitSlop={8}
+                    onPress={() =>
+                      Alert.alert('Delete this post?', 'This removes it for everyone.', [
+                        { text: 'Cancel', style: 'cancel' },
+                        { text: 'Delete', style: 'destructive', onPress: () => deletePost(p.id) },
+                      ])
+                    }
+                  >
+                    <Trash2 size={16} color={theme.colors.inkSoft} />
+                  </Pressable>
+                )}
+              </View>
+            </Card>
+          ))}
+        </View>
+      )}
     </ScrollView>
   );
 }
@@ -131,6 +223,42 @@ const styles = StyleSheet.create({
     color: theme.colors.ink,
     lineHeight: 30 * theme.lineHeightMultiplier.tight,
   },
+  shareBtn: {
+    backgroundColor: theme.colors.card,
+    borderWidth: theme.border.width,
+    borderColor: theme.colors.line,
+    borderRadius: theme.radius.pill,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginBottom: 16,
+  },
+  shareBtnText: { fontSize: 14, color: theme.colors.inkSoft, fontFamily: theme.font.bodyRegular },
+  composeInput: {
+    backgroundColor: theme.colors.paper,
+    borderWidth: theme.border.width,
+    borderColor: theme.colors.line,
+    borderRadius: theme.radius.md,
+    fontSize: 14,
+    color: theme.colors.ink,
+    padding: 12,
+    height: 80,
+    textAlignVertical: 'top',
+    fontFamily: theme.font.bodyRegular,
+  },
+  rowGap: { flexDirection: 'row', gap: 8, marginTop: 8 },
+  postBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: theme.colors.grass,
+    borderRadius: theme.radius.md,
+    paddingVertical: 10,
+  },
+  postBtnText: { color: '#fff', fontFamily: theme.font.bodyBold, fontSize: 14 },
+  cancelBtn: { paddingHorizontal: 16, justifyContent: 'center', borderWidth: theme.border.width, borderColor: theme.colors.line, borderRadius: theme.radius.md },
+  cancelBtnText: { fontFamily: theme.font.bodyBold, fontSize: 13.5, color: theme.colors.ink },
   rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 },
   rowCenter: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   eventEyebrowRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
@@ -159,4 +287,7 @@ const styles = StyleSheet.create({
     gap: 12,
     padding: 14,
   },
+  postWho: { fontSize: 13, fontFamily: theme.font.bodyBold, color: theme.colors.ink },
+  postWhen: { fontSize: 11.5, color: theme.colors.inkSoft, fontFamily: theme.font.bodySemibold },
+  postText: { fontSize: 13.5, color: theme.colors.ink, marginTop: 2, fontFamily: theme.font.bodyRegular },
 });

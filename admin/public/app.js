@@ -236,28 +236,6 @@ async function loadRealtorAccounts() {
   });
 }
 
-document.getElementById('create-realtor-account-form').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const msg = document.getElementById('create-realtor-account-msg');
-  try {
-    await api('/realtor-accounts', {
-      method: 'POST',
-      body: JSON.stringify({
-        name: document.getElementById('realtor-account-name').value,
-        tag: document.getElementById('realtor-account-tag').value,
-        phone: document.getElementById('realtor-account-phone').value,
-        email: document.getElementById('realtor-account-email').value,
-        password: document.getElementById('realtor-account-password').value,
-      }),
-    });
-    setMsg(msg, 'Realtor account created.', true);
-    e.target.reset();
-    await loadRealtorAccounts();
-  } catch (err) {
-    setMsg(msg, err.message, false);
-  }
-});
-
 // ---------------------------------------------------------------------------
 // Realtor signup keys
 // ---------------------------------------------------------------------------

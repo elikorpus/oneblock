@@ -29,6 +29,8 @@ export function NotificationsScreen({ navigation }: Props) {
       navigation.navigate('EventDetail', { eventId: n.go.id });
     } else if (n.go.type === 'person') {
       navigation.navigate('PersonProfile', { personId: n.go.id });
+    } else if (n.go.type === 'ask') {
+      navigation.navigate('ChatThread', { askId: n.go.id });
     }
   };
 

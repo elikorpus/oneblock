@@ -147,7 +147,7 @@ export type NotificationRow = {
   tint: string;
   title: string;
   sub: string;
-  go_type: 'tab' | 'event' | 'person';
+  go_type: 'tab' | 'event' | 'person' | 'ask';
   go_id: string;
   read: boolean;
   created_at: string;
@@ -240,8 +240,16 @@ export type ModerationLogRow = {
   id: string;
   community_id: string;
   board_profile_id: string | null;
-  entity_type: 'club_post' | 'event' | 'community_spot' | 'ask';
+  entity_type: 'club_post' | 'event' | 'community_spot' | 'ask' | 'community_post';
   summary: string;
+  created_at: string;
+};
+
+export type CommunityPostRow = {
+  id: string;
+  community_id: string;
+  author_profile_id: string;
+  text: string;
   created_at: string;
 };
 
@@ -274,6 +282,7 @@ export type Database = {
       community_spots: Rows<CommunitySpotRow>;
       realtor_accounts: Rows<RealtorAccountRow>;
       moderation_log: Rows<ModerationLogRow>;
+      community_posts: Rows<CommunityPostRow>;
     };
     Views: Record<string, never>;
     Functions: {
@@ -313,6 +322,7 @@ export type Database = {
       moderate_delete_event: { Args: { p_event_id: string }; Returns: void };
       moderate_delete_spot: { Args: { p_spot_id: string }; Returns: void };
       moderate_delete_ask: { Args: { p_ask_id: string }; Returns: void };
+      moderate_delete_post: { Args: { p_post_id: string }; Returns: void };
     };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;

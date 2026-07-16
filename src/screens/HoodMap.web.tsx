@@ -1,7 +1,8 @@
-import { Map, Marker } from '@vis.gl/react-maplibre';
+import { Map, type MapRef, Marker } from '@vis.gl/react-maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import React, { useMemo } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { LocateFixed } from 'lucide-react-native';
+import React, { useMemo, useRef } from 'react';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { useAppState } from '../state/AppStateContext';
 import { theme } from '../theme';
 import { computeHouseBounds, MAP_STYLE_URL } from './mapBounds';
@@ -34,6 +35,7 @@ const pinStyle = (background: string, scale: number): React.CSSProperties => ({
  * the web (react-dom) MapLibre bindings instead of the native ones — same look, same behavior. */
 export function HoodMap({ highlightHouse, onHousePress }: HoodMapProps) {
   const { houses } = useAppState();
+  const mapRef = useRef<MapRef>(null);
 
   const bounds = useMemo(() => computeHouseBounds(houses), [houses]);
 
@@ -42,8 +44,9 @@ export function HoodMap({ highlightHouse, onHousePress }: HoodMapProps) {
   }
 
   return (
-    <View style={styles.map}>
+    <View style={styles.container}>
       <Map
+        ref={mapRef}
         mapStyle={MAP_STYLE_URL}
         initialViewState={{ bounds, fitBoundsOptions: { padding: 24 } }}
         style={{ width: '100%', height: '100%' }}
@@ -59,11 +62,28 @@ export function HoodMap({ highlightHouse, onHousePress }: HoodMapProps) {
           );
         })}
       </Map>
+      <Pressable onPress={() => mapRef.current?.fitBounds(bounds, { padding: 24, duration: 400 })} style={styles.recenterBtn} hitSlop={6}>
+        <LocateFixed size={18} color={theme.colors.ink} />
+      </Pressable>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  map: { width: '100%', aspectRatio: 100 / 130 },
+  container: { width: '100%', aspectRatio: 100 / 130 },
   empty: { width: '100%', aspectRatio: 100 / 130, backgroundColor: '#EFE9DB' },
+  recenterBtn: {
+    position: 'absolute',
+    bottom: 12,
+    right: 12,
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: theme.colors.card,
+    borderWidth: theme.border.width,
+    borderColor: theme.colors.ink,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...theme.hardShadow('sm'),
+  },
 });

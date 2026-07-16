@@ -5,6 +5,16 @@ export type PersonSummary = {
   bg: string;
 };
 
+export type CommunityPost = {
+  id: string;
+  authorId: string;
+  who: string;
+  initials: string;
+  bg: string;
+  text: string;
+  createdAt: string;
+};
+
 export type FamilyMember = {
   id?: string;
   name: string;
@@ -110,10 +120,27 @@ export type CommunityBreakdown = {
 
 export type ModerationLogEntry = {
   id: string;
-  entityType: 'club_post' | 'event' | 'community_spot' | 'ask';
+  entityType: 'club_post' | 'event' | 'community_spot' | 'ask' | 'community_post';
   summary: string;
   who: string;
   when: string;
+};
+
+export type BoardMessage = {
+  fromBoard: boolean;
+  text: string;
+  createdAt: string;
+};
+
+/** One resident's conversation with the board. Board members see every thread in
+ * their community; residents only ever see their own (enforced by RLS). */
+export type BoardThread = {
+  residentId: string;
+  residentName: string;
+  initials: string;
+  bg: string;
+  messages: BoardMessage[];
+  lastMessageAt: string;
 };
 
 export type EventItem = {
@@ -167,7 +194,8 @@ export type Pro = {
 export type NotificationGo =
   | { type: 'tab'; id: string }
   | { type: 'event'; id: string }
-  | { type: 'person'; id: string };
+  | { type: 'person'; id: string }
+  | { type: 'ask'; id: string };
 
 export type NotificationItem = {
   id: string;

@@ -36,7 +36,8 @@
           "calendarPermission": "Neighborly uses your calendar to add events you RSVP to."
         }
       ],
-      "@maplibre/maplibre-react-native"
+      "@maplibre/maplibre-react-native",
+      "@react-native-community/datetimepicker"
     ],
     "experiments": {
       "baseUrl": "/neighborly"

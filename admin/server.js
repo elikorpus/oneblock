@@ -241,7 +241,8 @@ app.delete(
 );
 
 // ---------------------------------------------------------------------------
-// Realtor accounts (real logins — the "make someone a realtor" action)
+// Realtor accounts (real logins) — view + revoke only. Realtors are only ever
+// created by the realtor themselves, via a signup code, from the app.
 // ---------------------------------------------------------------------------
 
 app.get(
@@ -250,36 +251,6 @@ app.get(
     const { data, error } = await supabase.from('realtor_accounts').select('*').order('created_at', { ascending: false });
     if (error) throw error;
     res.json(data || []);
-  })
-);
-
-app.post(
-  '/api/realtor-accounts',
-  asyncRoute(async (req, res) => {
-    const { email, password, name, tag, phone } = req.body || {};
-    if (!email?.trim() || !password || password.length < 6 || !name?.trim()) {
-      return res.status(400).json({ error: 'Email, a password (6+ chars), and a name are required' });
-    }
-    const { data: created, error: createError } = await supabase.auth.admin.createUser({
-      email: email.trim(),
-      password,
-      email_confirm: true,
-    });
-    if (createError) throw createError;
-
-    const { error: rowError } = await supabase.from('realtor_accounts').insert({
-      id: created.user.id,
-      name: name.trim(),
-      tag: (tag || '').trim(),
-      phone: (phone || '').trim(),
-      email: email.trim(),
-    });
-    if (rowError) {
-      // Roll back the auth user so we don't leave an orphaned login with no realtor row.
-      await supabase.auth.admin.deleteUser(created.user.id);
-      throw rowError;
-    }
-    res.json({ ok: true });
   })
 );
 

@@ -4,8 +4,10 @@ import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { Chip } from '../components/Chip';
+import { DateTimeField } from '../components/DateTimeField';
 import { Input } from '../components/Input';
 import { buildEmptyStates } from '../data/emptyStates';
+import { formatISODate, formatTime12h } from '../lib/dateTimeFormat';
 import { useAppNavigation } from '../navigation/useAppNavigation';
 import { EmptyTab } from './empty';
 import { useAppState } from '../state/AppStateContext';
@@ -26,7 +28,7 @@ function DateChip({ mon, day, size = 52 }: { mon: string; day: string; size?: nu
 
 const FILTERS = ["RSVP'd", 'All events'] as const;
 
-const EMPTY_DRAFT = { title: '', date: '', time: '', where: '', description: '' };
+const EMPTY_DRAFT = { title: '', eventDate: null as Date | null, eventTime: null as Date | null, where: '', description: '' };
 
 export function EventsScreen() {
   const navigation = useAppNavigation();
@@ -53,16 +55,16 @@ export function EventsScreen() {
   const list = filter === "RSVP'd" ? events.filter((e) => eventRsvps[e.id]) : events;
 
   const submit = async () => {
-    if (!draft.title.trim() || !/^\d{4}-\d{2}-\d{2}$/.test(draft.date.trim())) {
-      setError('Add a title and a date like 2026-08-02.');
+    if (!draft.title.trim() || !draft.eventDate || !draft.eventTime) {
+      setError('Add a title, date, and time.');
       return;
     }
     setError('');
     await addEvent({
       emoji: '🎉',
       title: draft.title.trim(),
-      eventDate: draft.date.trim(),
-      eventTime: draft.time.trim(),
+      eventDate: formatISODate(draft.eventDate),
+      eventTime: formatTime12h(draft.eventTime),
       where: draft.where.trim(),
       description: draft.description.trim(),
     });
@@ -87,8 +89,8 @@ export function EventsScreen() {
       ) : (
         <Card style={{ marginBottom: 16 }}>
           <Input label="Title" value={draft.title} onChangeText={(t) => setDraft({ ...draft, title: t })} placeholder="e.g. Cul-de-sac BBQ" />
-          <Input label="Date" value={draft.date} onChangeText={(t) => setDraft({ ...draft, date: t })} placeholder="2026-08-02" />
-          <Input label="Time" value={draft.time} onChangeText={(t) => setDraft({ ...draft, time: t })} placeholder="6:00 PM" />
+          <DateTimeField label="Date" mode="date" value={draft.eventDate} onChange={(d) => setDraft({ ...draft, eventDate: d })} />
+          <DateTimeField label="Time" mode="time" value={draft.eventTime} onChange={(d) => setDraft({ ...draft, eventTime: d })} />
           <Input label="Where" value={draft.where} onChangeText={(t) => setDraft({ ...draft, where: t })} placeholder="e.g. the cul-de-sac" />
           <Text style={styles.composeLabel}>Details</Text>
           <TextInput
@@ -166,7 +168,12 @@ export function EventsScreen() {
         );
       })}
 
-      {list.length === 0 && <Text style={styles.empty}>No RSVPs yet — tap "All events" to find something for the weekend.</Text>}
+      {list.length === 0 &&
+        (filter === "RSVP'd" ? (
+          <Text style={styles.empty}>No RSVPs yet — tap "All events" to find something for the weekend.</Text>
+        ) : (
+          <Text style={styles.empty}>Nothing on the calendar yet — tap "Create an event" above to start one.</Text>
+        ))}
     </ScrollView>
   );
 }

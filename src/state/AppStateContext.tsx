@@ -4,8 +4,10 @@ import { ProfileData } from '../data/constants';
 import {
   Announcement,
   Ask,
+  BoardThread,
   Club,
   CommunityBreakdown,
+  CommunityPost,
   EventItem,
   FamilyMember,
   Fine,
@@ -30,6 +32,7 @@ import {
   ClubPostRow,
   ClubRow,
   CommunityInsightsRow,
+  CommunityPostRow,
   CommunityScoreRow,
   CommunitySpotRow,
   EventRow,
@@ -85,6 +88,20 @@ function colorForId(id: string): string {
 function initialsFor(first: string, last: string): string {
   const i = ((first[0] ?? '') + (last[0] ?? '')).toUpperCase();
   return i || '?';
+}
+
+/** signUp() only returns a session immediately if the project has email
+ * confirmation disabled. Belt-and-suspenders: if it didn't come back with one
+ * (a stricter project setting, or a transient hiccup), try signing in right
+ * away with the same credentials before giving up — so a fresh signup always
+ * lands the person straight in the app instead of back at the login screen. */
+async function ensureSessionAfterSignUp(email: string, password: string, existing: Session | null): Promise<Session> {
+  if (existing) return existing;
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error || !data.session) {
+    throw new Error("Your account was created, but this community requires email confirmation before signing in — check your inbox, then sign in from the login screen.");
+  }
+  return data.session;
 }
 
 function monthDay(dateStr: string | null): { mon: string; day: string } {
@@ -162,8 +179,8 @@ type AppState = {
   notifications: NotificationItem[];
   announcements: Announcement[];
   addAnnouncement: (title: string, body: string) => Promise<void>;
-  boardMessages: { from: 'you' | 'them'; text: string }[];
-  sendBoardMessage: (text: string) => void;
+  boardThreads: BoardThread[];
+  sendBoardMessage: (text: string, targetProfileId?: string) => void;
 
   // notifications
   readNotificationIds: string[];
@@ -172,10 +189,11 @@ type AppState = {
   unreadNotificationCount: number;
 
   // asks + votes
-  addAsk: (text: string) => void;
+  addAsk: (text: string, kind?: 'Borrow' | 'Favor' | 'Recommend' | 'Ask') => void;
   sendChatMessage: (askId: string, text: string) => void;
   votes: Record<string, Vote>;
   vote: (fineId: string, which: Vote) => void;
+  addFine: (args: { desc: string; addr: string; amount: number; comment: string }) => Promise<void>;
 
   // event RSVPs
   eventRsvps: Record<string, boolean>;
@@ -192,12 +210,17 @@ type AppState = {
   clubEventRsvps: Record<string, boolean>;
   toggleClubEventRsvp: (clubId: string) => void;
 
+  // community posts (Today feed "share something")
+  posts: CommunityPost[];
+  addPost: (text: string) => Promise<void>;
+
   // HOA board moderation
   moderationLog: ModerationLogEntry[];
   deleteClubPost: (postId: string) => Promise<void>;
   deleteEvent: (eventId: string) => Promise<void>;
   deleteSpot: (spotId: string) => Promise<void>;
   deleteAsk: (askId: string) => Promise<void>;
+  deletePost: (postId: string) => Promise<void>;
 };
 
 const AppStateContext = createContext<AppState | null>(null);
@@ -234,6 +257,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   const [scoreRows, setScoreRows] = useState<CommunityScoreRow[]>([]);
   const [realtorRow, setRealtorRow] = useState<RealtorAccountRow | null>(null);
   const [moderationLogRows, setModerationLogRows] = useState<ModerationLogRow[]>([]);
+  const [communityPostRows, setCommunityPostRows] = useState<CommunityPostRow[]>([]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -293,6 +317,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       insightsRes,
       scoreRes,
       moderationLogRes,
+      communityPostRes,
     ] = await Promise.all([
       supabase.from('family_members').select('*'),
       supabase.from('profiles').select('*').neq('id', uid),
@@ -318,6 +343,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       supabase.rpc('community_insights'),
       supabase.rpc('community_scores'),
       supabase.from('moderation_log').select('*').order('created_at', { ascending: false }),
+      supabase.from('community_posts').select('*').order('created_at', { ascending: false }),
     ]);
 
     const allFamily = (familyRes.data ?? []) as FamilyMemberRow[];
@@ -354,6 +380,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     setInsightsRow(insights[0] ?? null);
     setScoreRows((scoreRes.data ?? []) as CommunityScoreRow[]);
     setModerationLogRows((moderationLogRes.data ?? []) as ModerationLogRow[]);
+    setCommunityPostRows((communityPostRes.data ?? []) as CommunityPostRow[]);
     setDataLoading(false);
   }, []);
 
@@ -388,6 +415,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       setScoreRows([]);
       setRealtorRow(null);
       setModerationLogRows([]);
+      setCommunityPostRows([]);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session]);
@@ -413,10 +441,8 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     }) => {
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({ email: args.email, password: args.password });
       if (signUpError) throw signUpError;
-      if (!signUpData.session) {
-        throw new Error('Check your email to confirm your account, then sign in.');
-      }
-      const newUserId = signUpData.session.user.id;
+      const session = await ensureSessionAfterSignUp(args.email, args.password, signUpData.session);
+      const newUserId = session.user.id;
       const { error: rpcError } = await supabase.rpc('complete_profile', {
         p_signup_key: args.signupKey,
         p_first_name: args.firstName,
@@ -455,9 +481,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     async (args: { email: string; password: string; signupKey: string; name: string; tag: string; phone: string }) => {
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({ email: args.email, password: args.password });
       if (signUpError) throw signUpError;
-      if (!signUpData.session) {
-        throw new Error('Check your email to confirm your account, then sign in.');
-      }
+      await ensureSessionAfterSignUp(args.email, args.password, signUpData.session);
       const { error: rpcError } = await supabase.rpc('complete_realtor_signup', {
         p_signup_key: args.signupKey,
         p_name: args.name,
@@ -604,6 +628,23 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
         };
       }),
     [moderationLogRows, profilesById]
+  );
+
+  const posts: CommunityPost[] = useMemo(
+    () =>
+      communityPostRows.map((r) => {
+        const author = profilesById.get(r.author_profile_id);
+        return {
+          id: r.id,
+          authorId: r.author_profile_id,
+          who: author ? `${author.first_name} ${author.last_name}`.trim() : 'Neighbor',
+          initials: author ? initialsFor(author.first_name, author.last_name) : '?',
+          bg: colorForId(r.author_profile_id),
+          text: r.text,
+          createdAt: timeAgo(r.created_at),
+        };
+      }),
+    [communityPostRows, profilesById]
   );
 
   const directory: Person[] = useMemo(() => {
@@ -828,10 +869,28 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     [announcementRows, profilesById]
   );
 
-  const boardMessages = useMemo(
-    () => boardMessageRows.map((r) => ({ from: (r.from_board ? 'them' : 'you') as 'you' | 'them', text: r.text })),
-    [boardMessageRows]
-  );
+  const boardThreads: BoardThread[] = useMemo(() => {
+    const byResident = new Map<string, BoardMessageRow[]>();
+    for (const r of boardMessageRows) {
+      const arr = byResident.get(r.profile_id) ?? [];
+      arr.push(r);
+      byResident.set(r.profile_id, arr);
+    }
+    const threads: BoardThread[] = [];
+    for (const [residentId, rows] of byResident) {
+      const sorted = [...rows].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+      const resident = profilesById.get(residentId);
+      threads.push({
+        residentId,
+        residentName: resident ? `${resident.first_name} ${resident.last_name}`.trim() : 'Neighbor',
+        initials: resident ? initialsFor(resident.first_name, resident.last_name) : '?',
+        bg: colorForId(residentId),
+        messages: sorted.map((r) => ({ fromBoard: r.from_board, text: r.text, createdAt: r.created_at })),
+        lastMessageAt: sorted[sorted.length - 1]?.created_at ?? '',
+      });
+    }
+    return threads.sort((a, b) => new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime());
+  }, [boardMessageRows, profilesById]);
 
   const setProfile = useCallback(
     async (p: Profile) => {
@@ -893,11 +952,11 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   }, [myRow]);
 
   const addAsk = useCallback(
-    async (text: string) => {
+    async (text: string, kind: 'Borrow' | 'Favor' | 'Recommend' | 'Ask' = 'Ask') => {
       if (!myRow) return;
       const { data } = await supabase
         .from('asks')
-        .insert({ community_id: myRow.community_id, author_profile_id: myRow.id, kind: 'Ask', text })
+        .insert({ community_id: myRow.community_id, author_profile_id: myRow.id, kind, text })
         .select()
         .single();
       if (!data) return;
@@ -937,6 +996,19 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       if (data) setFineVoteRows((rows) => [...rows, data as FineVoteRow]);
     },
     [myRow, votes]
+  );
+
+  const addFine = useCallback(
+    async (args: { desc: string; addr: string; amount: number; comment: string }) => {
+      if (!myRow) return;
+      const { data } = await supabase
+        .from('fines')
+        .insert({ community_id: myRow.community_id, description: args.desc, address: args.addr, amount: args.amount, comment: args.comment })
+        .select()
+        .single();
+      if (data) setFineRows((rows) => [data as FineRow, ...rows]);
+    },
+    [myRow]
   );
 
   const toggleEventRsvp = useCallback(
@@ -1117,33 +1189,45 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     [askRows, logModeration]
   );
 
-  const sendBoardMessage = useCallback(
+  const addPost = useCallback(
     async (text: string) => {
       if (!myRow) return;
-      const communityId = myRow.community_id;
-      const myId = myRow.id;
+      const { data } = await supabase
+        .from('community_posts')
+        .insert({ community_id: myRow.community_id, author_profile_id: myRow.id, text })
+        .select()
+        .single();
+      if (data) setCommunityPostRows((rows) => [data as CommunityPostRow, ...rows]);
+    },
+    [myRow]
+  );
+
+  const deletePost = useCallback(
+    async (postId: string) => {
+      const post = communityPostRows.find((p) => p.id === postId);
+      const { error } = await supabase.rpc('moderate_delete_post', { p_post_id: postId });
+      if (error) return;
+      setCommunityPostRows((rows) => rows.filter((p) => p.id !== postId));
+      if (post) logModeration('community_post', post.text);
+    },
+    [communityPostRows, logModeration]
+  );
+
+  const sendBoardMessage = useCallback(
+    async (text: string, targetProfileId?: string) => {
+      if (!myRow) return;
+      // No target = a resident writing to their own thread. A target = a board
+      // member replying inside someone else's thread from the inbox.
+      const profileId = targetProfileId ?? myRow.id;
+      const fromBoard = !!targetProfileId;
       const { data } = await supabase
         .from('board_messages')
-        .insert({ community_id: communityId, profile_id: myId, from_board: false, text })
+        .insert({ community_id: myRow.community_id, profile_id: profileId, from_board: fromBoard, text })
         .select()
         .single();
       if (data) setBoardMessageRows((rows) => [...rows, data as BoardMessageRow]);
-      const hoaName = communityName ? `${communityName} HOA` : 'the HOA';
-      setTimeout(async () => {
-        const { data: reply } = await supabase
-          .from('board_messages')
-          .insert({
-            community_id: communityId,
-            profile_id: myId,
-            from_board: true,
-            text: `Got it — added to the board's queue. We typically reply within 2 business days. — ${hoaName}`,
-          })
-          .select()
-          .single();
-        if (reply) setBoardMessageRows((rows) => [...rows, reply as BoardMessageRow]);
-      }, 700);
     },
-    [myRow, communityName]
+    [myRow]
   );
 
   const value = useMemo<AppState>(
@@ -1185,7 +1269,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       notifications,
       announcements,
       addAnnouncement,
-      boardMessages,
+      boardThreads,
       sendBoardMessage,
       readNotificationIds,
       markNotificationRead,
@@ -1195,6 +1279,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       sendChatMessage,
       votes,
       vote,
+      addFine,
       eventRsvps,
       toggleEventRsvp,
       wavedIds,
@@ -1209,6 +1294,9 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       deleteEvent,
       deleteSpot,
       deleteAsk,
+      posts,
+      addPost,
+      deletePost,
     }),
     [
       session,
@@ -1247,7 +1335,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       notifications,
       announcements,
       addAnnouncement,
-      boardMessages,
+      boardThreads,
       sendBoardMessage,
       readNotificationIds,
       markNotificationRead,
@@ -1257,6 +1345,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       sendChatMessage,
       votes,
       vote,
+      addFine,
       eventRsvps,
       toggleEventRsvp,
       wavedIds,
@@ -1271,6 +1360,9 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       deleteEvent,
       deleteSpot,
       deleteAsk,
+      posts,
+      addPost,
+      deletePost,
     ]
   );
 

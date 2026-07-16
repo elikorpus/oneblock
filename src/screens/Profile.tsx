@@ -11,6 +11,7 @@ import { PillTag } from '../components/PillTag';
 import { SectionLabel } from '../components/SectionLabel';
 import { INTEREST_POOL, TENURE } from '../data/constants';
 import { FamilyMember } from '../data/types';
+import { supabase } from '../lib/supabase';
 import { AppStackParamList } from '../navigation/types';
 import { Profile as ProfileType, useAppState } from '../state/AppStateContext';
 import { theme } from '../theme';
@@ -18,7 +19,7 @@ import { theme } from '../theme';
 type Props = NativeStackScreenProps<AppStackParamList, 'Profile'>;
 
 export function ProfileScreen({ navigation }: Props) {
-  const { profile, setProfile, logout, isBoardMember } = useAppState();
+  const { profile, setProfile, logout, isBoardMember, session } = useAppState();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<ProfileType>(profile);
   const [addingFam, setAddingFam] = useState(false);
@@ -28,6 +29,40 @@ export function ProfileScreen({ navigation }: Props) {
     age: '',
     petType: '',
   });
+
+  const [newEmail, setNewEmail] = useState('');
+  const [emailMsg, setEmailMsg] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordMsg, setPasswordMsg] = useState('');
+
+  const changeEmail = async () => {
+    const trimmed = newEmail.trim();
+    if (!/\S+@\S+\.\S+/.test(trimmed)) {
+      setEmailMsg('Enter a valid email.');
+      return;
+    }
+    const { error } = await supabase.auth.updateUser({ email: trimmed });
+    setEmailMsg(error ? error.message : 'Check your new email for a confirmation link to finish the change.');
+    if (!error) setNewEmail('');
+  };
+
+  const changePassword = async () => {
+    if (newPassword.length < 6) {
+      setPasswordMsg('Password must be at least 6 characters.');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordMsg('Passwords do not match.');
+      return;
+    }
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    setPasswordMsg(error ? error.message : 'Password updated.');
+    if (!error) {
+      setNewPassword('');
+      setConfirmPassword('');
+    }
+  };
 
   const v = editing ? draft : profile;
   const checks = [
@@ -97,16 +132,18 @@ export function ProfileScreen({ navigation }: Props) {
           </View>
         </View>
 
-        <View style={[styles.strengthCard, pct === 100 && { backgroundColor: theme.colors.grassPale, borderColor: '#CBDFC4' }]}>
-          <View style={styles.strengthRow}>
-            <Text style={styles.strengthLabel}>{pct === 100 ? 'Profile complete — the street knows you 🌟' : 'Profile strength'}</Text>
-            <Text style={styles.strengthPct}>{pct}%</Text>
+        {pct < 100 && (
+          <View style={styles.strengthCard}>
+            <View style={styles.strengthRow}>
+              <Text style={styles.strengthLabel}>Profile strength</Text>
+              <Text style={styles.strengthPct}>{pct}%</Text>
+            </View>
+            <View style={styles.strengthTrack}>
+              <View style={[styles.strengthFill, { width: `${pct}%`, backgroundColor: theme.colors.marigold }]} />
+            </View>
+            <Text style={styles.strengthNote}>A complete profile is how matches and neighbors find you.</Text>
           </View>
-          <View style={styles.strengthTrack}>
-            <View style={[styles.strengthFill, { width: `${pct}%`, backgroundColor: pct === 100 ? theme.colors.grass : theme.colors.marigold }]} />
-          </View>
-          <Text style={styles.strengthNote}>A complete profile is how matches and neighbors find you.</Text>
-        </View>
+        )}
 
         {editing ? (
           <Card style={{ marginBottom: 20 }}>
@@ -133,7 +170,29 @@ export function ProfileScreen({ navigation }: Props) {
             <Input label="Street address" value={draft.street} onChangeText={(t) => setDraft({ ...draft, street: t })} />
             <Input label="Bio" value={draft.bio} onChangeText={(t) => setDraft({ ...draft, bio: t })} />
           </Card>
-        ) : (
+        ) : null}
+
+        {editing && (
+          <Card style={{ marginBottom: 20 }}>
+            <SectionLabel>Account</SectionLabel>
+            <Input label="Email" value={newEmail} onChangeText={setNewEmail} placeholder={session?.user.email ?? 'you@example.com'} keyboardType="email-address" autoCapitalize="none" />
+            {!!emailMsg && <Text style={styles.accountMsg}>{emailMsg}</Text>}
+            <Pressable onPress={changeEmail} style={styles.accountBtn}>
+              <Text style={styles.accountBtnText}>Change email</Text>
+            </Pressable>
+
+            <View style={{ height: 16 }} />
+
+            <Input label="New password" value={newPassword} onChangeText={setNewPassword} placeholder="••••••••" secureTextEntry />
+            <Input label="Confirm new password" value={confirmPassword} onChangeText={setConfirmPassword} placeholder="••••••••" secureTextEntry />
+            {!!passwordMsg && <Text style={styles.accountMsg}>{passwordMsg}</Text>}
+            <Pressable onPress={changePassword} style={styles.accountBtn}>
+              <Text style={styles.accountBtnText}>Change password</Text>
+            </Pressable>
+          </Card>
+        )}
+
+        {!editing && (
           <Card style={{ marginBottom: 20 }}>
             {[
               ['Age', v.age],
@@ -249,9 +308,6 @@ export function ProfileScreen({ navigation }: Props) {
               </View>
               <ChevronRight size={18} color={theme.colors.paper} />
             </Pressable>
-            <Text style={styles.optOut}>
-              Your activity only appears in neighborhood scores as anonymous totals. <Text style={{ textDecorationLine: 'underline' }}>Opt out</Text>
-            </Text>
             <Pressable onPress={logout} style={styles.logoutBtn}>
               <LogOut size={15} color={theme.colors.red} />
               <Text style={styles.logoutText}>Log out</Text>
@@ -303,7 +359,9 @@ const styles = StyleSheet.create({
   sellBtn: { width: '100%', backgroundColor: theme.colors.ink, borderRadius: 20, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 12 },
   sellTitle: { color: theme.colors.paper, fontFamily: theme.font.displaySemibold, fontSize: 17 },
   sellSub: { color: theme.colors.onInkSoft, fontSize: 12.5, fontFamily: theme.font.bodyMedium },
-  optOut: { fontSize: 11.5, color: theme.colors.inkSoft, fontFamily: theme.font.bodySemibold, marginTop: 20, textAlign: 'center' },
   logoutBtn: { width: '100%', marginTop: 16, paddingVertical: 13, borderRadius: 14, borderWidth: theme.border.width, borderColor: theme.colors.line, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   logoutText: { color: theme.colors.red, fontFamily: theme.font.bodyBold, fontSize: 14 },
+  accountMsg: { fontSize: 12, color: theme.colors.grassDeep, fontFamily: theme.font.bodySemibold, marginBottom: 8 },
+  accountBtn: { paddingVertical: 10, borderRadius: 12, backgroundColor: theme.colors.ink, alignItems: 'center' },
+  accountBtnText: { color: theme.colors.paper, fontFamily: theme.font.bodyBold, fontSize: 13.5 },
 });
