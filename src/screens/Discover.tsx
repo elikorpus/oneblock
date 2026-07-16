@@ -56,6 +56,17 @@ export function DiscoverScreen() {
       />
     );
 
+  const handleHousePress = (id: string) => {
+    const house = houses.find((h) => h.id === id);
+    if (house?.you) {
+      navigation.navigate('Profile');
+      return;
+    }
+    const person = directory.find((p) => p.house === id);
+    if (person) navigation.navigate('PersonProfile', { personId: person.id });
+    else navigation.navigate('HouseDetail', { houseId: id });
+  };
+
   const selected = directory.find((d) => d.house === highlightHouse);
   const q = query.trim().toLowerCase();
   const filtered = q
@@ -81,7 +92,7 @@ export function DiscoverScreen() {
       {view === 'map' ? (
         <>
           <View style={styles.mapWrap}>
-            <HoodMap highlightHouse={highlightHouse} onHousePress={setHighlightHouse} />
+            <HoodMap highlightHouse={highlightHouse} onHousePress={handleHousePress} />
           </View>
 
           {selected && (

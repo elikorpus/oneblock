@@ -15,6 +15,7 @@ export type AppStackParamList = {
   Profile: undefined;
   Sell: undefined;
   PersonProfile: { personId: string };
+  HouseDetail: { houseId: string };
   ClubProfile: { clubId: string };
   ChatThread: { askId: string };
   EventDetail: { eventId: string };

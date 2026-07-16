@@ -12,13 +12,22 @@ export type HoodMapProps = {
 };
 
 const pinStyle = (background: string, scale: number): React.CSSProperties => ({
-  width: 18,
-  height: 18,
-  borderRadius: 6,
+  minWidth: 38,
+  height: 22,
+  borderRadius: 8,
   border: `2px solid ${theme.colors.ink}`,
   backgroundColor: background,
   transform: `scale(${scale})`,
   cursor: 'pointer',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  paddingLeft: 5,
+  paddingRight: 5,
+  fontSize: 10.5,
+  fontFamily: theme.font.bodyBold,
+  color: theme.colors.ink,
+  whiteSpace: 'nowrap',
 });
 
 /** Same MapLibre engine and OpenFreeMap style as the native map (HoodMap.tsx), just rendered through
@@ -45,7 +54,7 @@ export function HoodMap({ highlightHouse, onHousePress }: HoodMapProps) {
           const background = isHi ? theme.colors.marigold : h.you ? theme.colors.grass : theme.colors.card;
           return (
             <Marker key={h.id} longitude={h.longitude} latitude={h.latitude} onClick={() => onHousePress(h.id)}>
-              <div style={pinStyle(background, isHi ? 1.25 : 1)} />
+              <div style={pinStyle(background, isHi ? 1.15 : 1)}>{h.id}</div>
             </Marker>
           );
         })}

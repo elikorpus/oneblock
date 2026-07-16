@@ -3,6 +3,7 @@ import React from 'react';
 import { ChatThreadScreen } from '../screens/ChatThread';
 import { ClubProfileScreen } from '../screens/ClubProfile';
 import { EventDetailScreen } from '../screens/EventDetail';
+import { HouseDetailScreen } from '../screens/HouseDetail';
 import { NotificationsScreen } from '../screens/Notifications';
 import { PersonProfileScreen } from '../screens/PersonProfile';
 import { ProfileScreen } from '../screens/Profile';
@@ -22,6 +23,7 @@ export function AppStack() {
       <Stack.Screen name="Profile" component={ProfileScreen} />
       <Stack.Screen name="Sell" component={SellScreen} />
       <Stack.Screen name="PersonProfile" component={PersonProfileScreen} />
+      <Stack.Screen name="HouseDetail" component={HouseDetailScreen} />
       <Stack.Screen name="ClubProfile" component={ClubProfileScreen} />
       <Stack.Screen name="ChatThread" component={ChatThreadScreen} />
       <Stack.Screen name="EventDetail" component={EventDetailScreen} />
