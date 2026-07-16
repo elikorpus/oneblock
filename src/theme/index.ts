@@ -16,7 +16,7 @@ import {
 export type ShadowSize = 'sm' | 'md' | 'lg' | 'frame';
 
 /**
- * The Neighborly signature is a hard, offset, (nearly) un-blurred "sticker" shadow —
+ * The OneBlock signature is a hard, offset, (nearly) un-blurred "sticker" shadow —
  * `2px 3px 0 rgba(34,29,20,.12)` — rather than soft material elevation.
  * `shadowRadius: 0` on iOS gives a genuinely crisp offset shadow. Android's `elevation`
  * has no offset/blur control, so it only approximates the look there.

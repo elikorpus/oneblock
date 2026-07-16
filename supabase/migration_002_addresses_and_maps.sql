@@ -1,4 +1,4 @@
--- Neighborly — migration 002: real addresses + map coordinates
+-- OneBlock — migration 002: real addresses + map coordinates
 -- Run this once in the Supabase SQL Editor, after schema.sql.
 -- Safe to re-run.
 

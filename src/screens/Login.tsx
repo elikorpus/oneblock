@@ -36,7 +36,7 @@ export function LoginScreen({ navigation }: Props) {
               <Text style={styles.badgeEmoji}>🏡</Text>
             </View>
             <Text style={styles.wordmark}>
-              neighborly<Text style={{ color: theme.colors.grass }}>.</Text>
+              oneblock<Text style={{ color: theme.colors.grass }}>.</Text>
             </Text>
             <Text style={styles.title}>Welcome back{'\n'}to the street.</Text>
             <Text style={styles.body}>

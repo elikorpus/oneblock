@@ -42,13 +42,13 @@ export function RealtorSignupScreen({ navigation }: Props) {
         <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
           <View style={styles.hero}>
             <Text style={styles.wordmark}>
-              neighborly<Text style={{ color: theme.colors.grass }}>.</Text> for realtors
+              oneblock<Text style={{ color: theme.colors.grass }}>.</Text> for realtors
             </Text>
-            <Text style={styles.title}>See every community's{'\n'}Neighborly score.</Text>
+            <Text style={styles.title}>See every community's{'\n'}OneBlock score.</Text>
             <Text style={styles.body}>Realtor accounts are separate from resident accounts — you'll see a scoreboard across every community, not one neighborhood's feed.</Text>
           </View>
           <View style={styles.actions}>
-            <Input label="Realtor code" value={signupKey} onChangeText={setSignupKey} placeholder="From your Neighborly contact" autoCapitalize="characters" />
+            <Input label="Realtor code" value={signupKey} onChangeText={setSignupKey} placeholder="From your OneBlock contact" autoCapitalize="characters" />
             <Input label="Full name" value={name} onChangeText={setName} placeholder="e.g. Lena Ward" />
             <Input label="Brokerage / tag" value={tag} onChangeText={setTag} placeholder="e.g. Ward Realty Group" />
             <Input label="Phone" value={phone} onChangeText={setPhone} placeholder="(555) 555-1234" keyboardType="phone-pad" />

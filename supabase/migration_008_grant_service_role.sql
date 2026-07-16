@@ -1,4 +1,4 @@
--- Neighborly — migration 008: grant the service role real table access
+-- OneBlock — migration 008: grant the service role real table access
 --
 -- Bug: every earlier migration's GRANT statements only ever targeted
 -- `authenticated` (the role the mobile app's requests run as). The admin

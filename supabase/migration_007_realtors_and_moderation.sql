@@ -1,4 +1,4 @@
--- Neighborly — migration 007: realtor accounts + HOA board moderation
+-- OneBlock — migration 007: realtor accounts + HOA board moderation
 --
 -- Two independent features:
 --

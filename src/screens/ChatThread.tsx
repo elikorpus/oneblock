@@ -4,6 +4,7 @@ import React, { useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Avatar } from '../components/Avatar';
 import { BackBar } from '../components/BackBar';
+import { PersonLink } from '../components/PersonLink';
 import { AppStackParamList } from '../navigation/types';
 import { useAppState } from '../state/AppStateContext';
 import { theme } from '../theme';
@@ -12,7 +13,7 @@ type Props = NativeStackScreenProps<AppStackParamList, 'ChatThread'>;
 
 export function ChatThreadScreen({ route, navigation }: Props) {
   const { askId } = route.params;
-  const { asks, sendChatMessage, communityName } = useAppState();
+  const { asks, sendChatMessage, communityName, myProfileId } = useAppState();
   const ask = asks.find((a) => a.id === askId)!;
   const [text, setText] = useState('');
   const scrollRef = useRef<ScrollView>(null);
@@ -23,9 +24,23 @@ export function ChatThreadScreen({ route, navigation }: Props) {
     setText('');
   };
 
+  const goToAuthorProfile = () => {
+    if (ask.authorId === myProfileId) navigation.navigate('Profile');
+    else navigation.navigate('PersonProfile', { personId: ask.authorId });
+  };
+
   return (
     <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={90}>
-      <BackBar title={ask.who} onBack={() => navigation.goBack()} right={<Avatar initials={ask.initials} bg={ask.bg} size={30} tilt={-3} />} />
+      <BackBar
+        title={ask.who}
+        onBack={() => navigation.goBack()}
+        onTitlePress={goToAuthorProfile}
+        right={
+          <PersonLink personId={ask.authorId}>
+            <Avatar initials={ask.initials} bg={ask.bg} size={30} tilt={-3} />
+          </PersonLink>
+        }
+      />
       <ScrollView
         ref={scrollRef}
         contentContainerStyle={styles.messages}

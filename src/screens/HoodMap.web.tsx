@@ -12,7 +12,7 @@ export type HoodMapProps = {
   onHousePress: (id: string) => void;
 };
 
-const pinStyle = (background: string, scale: number): React.CSSProperties => ({
+const pinStyle = (background: string, scale: number, textColor: string): React.CSSProperties => ({
   minWidth: 38,
   height: 22,
   borderRadius: 8,
@@ -27,7 +27,7 @@ const pinStyle = (background: string, scale: number): React.CSSProperties => ({
   paddingRight: 5,
   fontSize: 10.5,
   fontFamily: theme.font.bodyBold,
-  color: theme.colors.ink,
+  color: textColor,
   whiteSpace: 'nowrap',
 });
 
@@ -54,10 +54,11 @@ export function HoodMap({ highlightHouse, onHousePress }: HoodMapProps) {
       >
         {houses.map((h) => {
           const isHi = h.id === highlightHouse;
-          const background = isHi ? theme.colors.marigold : h.you ? theme.colors.grass : theme.colors.card;
+          const background = isHi ? theme.colors.marigold : h.claimed ? theme.colors.grass : theme.colors.card;
+          const textColor = !isHi && h.claimed ? '#fff' : theme.colors.ink;
           return (
             <Marker key={h.id} longitude={h.longitude} latitude={h.latitude} onClick={() => onHousePress(h.id)}>
-              <div style={pinStyle(background, isHi ? 1.15 : 1)}>{h.id}</div>
+              <div style={pinStyle(background, isHi ? 1.15 : 1, textColor)}>{h.id}</div>
             </Marker>
           );
         })}

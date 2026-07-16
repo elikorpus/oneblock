@@ -1,5 +1,5 @@
 import { Session } from '@supabase/supabase-js';
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { ProfileData } from '../data/constants';
 import {
   Announcement,
@@ -10,7 +10,6 @@ import {
   CommunityPost,
   EventItem,
   FamilyMember,
-  Fine,
   House,
   MatchNeighbor,
   ModerationLogEntry,
@@ -18,6 +17,7 @@ import {
   NeighborhoodTrend,
   NotificationItem,
   Person,
+  Poll,
   Pro,
   Realtor,
   RealtorProfile,
@@ -39,12 +39,12 @@ import {
   EventRow,
   EventRsvpRow,
   FamilyMemberRow,
-  FineRow,
-  FineVoteRow,
   HouseRow,
   AnnouncementRow,
   ModerationLogRow,
   NotificationRow,
+  PollRow,
+  PollVoteRow,
   ProRow,
   ProfileRow,
   RealtorAccountRow,
@@ -55,7 +55,7 @@ import { supabase } from '../lib/supabase';
 import { theme } from '../theme';
 
 export type Profile = ProfileData;
-type Vote = 'fair' | 'unfair';
+type Vote = 'a' | 'b';
 
 const EMPTY_PROFILE: Profile = {
   firstName: '',
@@ -128,6 +128,7 @@ type AppState = {
   dataLoading: boolean;
   hasProfile: boolean;
   isBoardMember: boolean;
+  myProfileId: string | null;
   logout: () => void;
   completeSignup: (args: {
     email: string;
@@ -168,7 +169,7 @@ type AppState = {
   events: EventItem[];
   addEvent: (args: { emoji: string; title: string; eventDate: string; eventTime: string; where: string; description: string }) => Promise<void>;
   asks: Ask[];
-  fines: Fine[];
+  polls: Poll[];
   pros: Pro[];
   realtors: Realtor[];
   spots: Spot[];
@@ -196,8 +197,8 @@ type AppState = {
   hideAsk: (askId: string) => Promise<void>;
   unhideAsk: (askId: string) => Promise<void>;
   votes: Record<string, Vote>;
-  vote: (fineId: string, which: Vote) => void;
-  addFine: (args: { desc: string; addr: string; amount: number; comment: string }) => Promise<void>;
+  vote: (pollId: string, which: Vote) => void;
+  addPoll: (args: { title: string; description: string; optionA: string; optionB: string }) => Promise<void>;
 
   // event RSVPs
   eventRsvps: Record<string, boolean>;
@@ -247,8 +248,8 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   const [askRows, setAskRows] = useState<AskRow[]>([]);
   const [askMessageRows, setAskMessageRows] = useState<AskMessageRow[]>([]);
   const [askHideRows, setAskHideRows] = useState<AskHideRow[]>([]);
-  const [fineRows, setFineRows] = useState<FineRow[]>([]);
-  const [fineVoteRows, setFineVoteRows] = useState<FineVoteRow[]>([]);
+  const [pollRows, setPollRows] = useState<PollRow[]>([]);
+  const [pollVoteRows, setPollVoteRows] = useState<PollVoteRow[]>([]);
   const [proRows, setProRows] = useState<ProRow[]>([]);
   const [notificationRows, setNotificationRows] = useState<NotificationRow[]>([]);
   const [announcementRows, setAnnouncementRows] = useState<AnnouncementRow[]>([]);
@@ -309,8 +310,8 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       askRes,
       askMessageRes,
       askHideRes,
-      fineRes,
-      fineVoteRes,
+      pollRes,
+      pollVoteRes,
       proRes,
       notificationRes,
       announcementRes,
@@ -336,8 +337,8 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       supabase.from('asks').select('*').order('created_at', { ascending: false }),
       supabase.from('ask_messages').select('*').order('created_at', { ascending: true }),
       supabase.from('ask_hides').select('*').eq('profile_id', uid),
-      supabase.from('fines').select('*'),
-      supabase.from('fine_votes').select('*'),
+      supabase.from('polls').select('*').order('created_at', { ascending: false }),
+      supabase.from('poll_votes').select('*'),
       supabase.from('pros').select('*'),
       supabase.from('notifications').select('*').order('created_at', { ascending: false }),
       supabase.from('announcements').select('*').order('created_at', { ascending: false }),
@@ -372,8 +373,8 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     setAskRows((askRes.data ?? []) as AskRow[]);
     setAskMessageRows((askMessageRes.data ?? []) as AskMessageRow[]);
     setAskHideRows((askHideRes.data ?? []) as AskHideRow[]);
-    setFineRows((fineRes.data ?? []) as FineRow[]);
-    setFineVoteRows((fineVoteRes.data ?? []) as FineVoteRow[]);
+    setPollRows((pollRes.data ?? []) as PollRow[]);
+    setPollVoteRows((pollVoteRes.data ?? []) as PollVoteRow[]);
     setProRows((proRes.data ?? []) as ProRow[]);
     setNotificationRows((notificationRes.data ?? []) as NotificationRow[]);
     setAnnouncementRows((announcementRes.data ?? []) as AnnouncementRow[]);
@@ -392,8 +393,13 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     setDataLoading(false);
   }, []);
 
-  useEffect(() => {
+  // Layout effect (not a plain effect) so dataLoading flips to true in the same
+  // commit as a fresh session appearing — closes a gap right after signup where
+  // session is already set but hasProfile/isRealtorAccount haven't resolved yet,
+  // which would otherwise render AuthStack for a frame instead of the loading screen.
+  useLayoutEffect(() => {
     if (session) {
+      setDataLoading(true);
       refreshAll();
     } else {
       setMyRow(null);
@@ -409,8 +415,8 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       setAskRows([]);
       setAskMessageRows([]);
       setAskHideRows([]);
-      setFineRows([]);
-      setFineVoteRows([]);
+      setPollRows([]);
+      setPollVoteRows([]);
       setProRows([]);
       setNotificationRows([]);
       setAnnouncementRows([]);
@@ -732,6 +738,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
           const author = profilesById.get(p.author_profile_id);
           return {
             id: p.id,
+            authorId: p.author_profile_id,
             who: author ? `${author.first_name} ${author.last_name}`.trim() : 'Neighbor',
             initials: author ? initialsFor(author.first_name, author.last_name) : '?',
             bg: colorForId(p.author_profile_id),
@@ -753,6 +760,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
         spot: row.spot,
         lead: lead
           ? {
+              id: lead.id,
               name: `${lead.first_name} ${lead.last_name}`.trim(),
               initials: initialsFor(lead.first_name, lead.last_name),
               bg: colorForId(lead.id),
@@ -788,7 +796,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
         time: row.event_time,
         where: row.where_text,
         host: host
-          ? { name: `${host.first_name} ${host.last_name}`.trim(), initials: initialsFor(host.first_name, host.last_name), bg: colorForId(host.id) }
+          ? { id: host.id, name: `${host.first_name} ${host.last_name}`.trim(), initials: initialsFor(host.first_name, host.last_name), bg: colorForId(host.id) }
           : { name: row.host_name, initials: (row.host_name[0] ?? '?').toUpperCase(), bg: theme.colors.mint },
         roster: rsvps.slice(0, 4).map((r) => personRoster(r.profile_id)),
         going: rsvps.length,
@@ -814,6 +822,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
         .map((m) => ({ from: (m.sender_profile_id === myRow?.id ? 'you' : 'them') as 'you' | 'them', text: m.text }));
       return {
         id: row.id,
+        authorId: row.author_profile_id,
         who: row.author_profile_id === myRow?.id ? 'You' : author ? `${author.first_name} ${author.last_name}`.trim() : 'Neighbor',
         initials: author ? initialsFor(author.first_name, author.last_name) : '?',
         bg: colorForId(row.author_profile_id),
@@ -846,26 +855,26 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     [myRow]
   );
 
-  const fines: Fine[] = useMemo(() => {
-    return fineRows.map((row) => {
-      const rowVotes = fineVoteRows.filter((v) => v.fine_id === row.id);
+  const polls: Poll[] = useMemo(() => {
+    return pollRows.map((row) => {
+      const rowVotes = pollVoteRows.filter((v) => v.poll_id === row.id);
       return {
         id: row.id,
-        desc: row.description,
-        addr: row.address,
-        amount: row.amount,
-        fair: rowVotes.filter((v) => v.vote === 'fair').length,
-        unfair: rowVotes.filter((v) => v.vote === 'unfair').length,
-        comment: row.comment,
+        title: row.title,
+        description: row.description,
+        optionA: row.option_a,
+        optionB: row.option_b,
+        votesA: rowVotes.filter((v) => v.choice === 'a').length,
+        votesB: rowVotes.filter((v) => v.choice === 'b').length,
       };
     });
-  }, [fineRows, fineVoteRows]);
+  }, [pollRows, pollVoteRows]);
 
   const votes: Record<string, Vote> = useMemo(() => {
     const out: Record<string, Vote> = {};
-    for (const v of fineVoteRows) if (v.profile_id === myRow?.id) out[v.fine_id] = v.vote;
+    for (const v of pollVoteRows) if (v.profile_id === myRow?.id) out[v.poll_id] = v.choice;
     return out;
-  }, [fineVoteRows, myRow]);
+  }, [pollVoteRows, myRow]);
 
   const pros: Pro[] = useMemo(() => proRows.map((r) => ({ name: r.name, used: r.used_count, tag: r.tag })), [proRows]);
 
@@ -1017,27 +1026,34 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   );
 
   const vote = useCallback(
-    async (fineId: string, which: Vote) => {
-      if (!myRow || votes[fineId]) return;
+    async (pollId: string, which: Vote) => {
+      if (!myRow || votes[pollId]) return;
       const { data } = await supabase
-        .from('fine_votes')
-        .insert({ fine_id: fineId, profile_id: myRow.id, vote: which })
+        .from('poll_votes')
+        .insert({ poll_id: pollId, profile_id: myRow.id, choice: which })
         .select()
         .single();
-      if (data) setFineVoteRows((rows) => [...rows, data as FineVoteRow]);
+      if (data) setPollVoteRows((rows) => [...rows, data as PollVoteRow]);
     },
     [myRow, votes]
   );
 
-  const addFine = useCallback(
-    async (args: { desc: string; addr: string; amount: number; comment: string }) => {
+  const addPoll = useCallback(
+    async (args: { title: string; description: string; optionA: string; optionB: string }) => {
       if (!myRow) return;
       const { data } = await supabase
-        .from('fines')
-        .insert({ community_id: myRow.community_id, description: args.desc, address: args.addr, amount: args.amount, comment: args.comment })
+        .from('polls')
+        .insert({
+          community_id: myRow.community_id,
+          board_profile_id: myRow.id,
+          title: args.title,
+          description: args.description,
+          option_a: args.optionA,
+          option_b: args.optionB,
+        })
         .select()
         .single();
-      if (data) setFineRows((rows) => [data as FineRow, ...rows]);
+      if (data) setPollRows((rows) => [data as PollRow, ...rows]);
     },
     [myRow]
   );
@@ -1267,6 +1283,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       sessionLoading,
       dataLoading,
       hasProfile: !!myRow,
+      myProfileId: myRow?.id ?? null,
       isBoardMember: myRow?.is_board_member ?? false,
       logout,
       completeSignup,
@@ -1288,7 +1305,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       events,
       addEvent,
       asks,
-      fines,
+      polls,
       pros,
       realtors,
       spots,
@@ -1313,7 +1330,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       unhideAsk,
       votes,
       vote,
-      addFine,
+      addPoll,
       eventRsvps,
       toggleEventRsvp,
       wavedIds,
@@ -1357,7 +1374,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       events,
       addEvent,
       asks,
-      fines,
+      polls,
       pros,
       realtors,
       spots,
@@ -1382,7 +1399,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       unhideAsk,
       votes,
       vote,
-      addFine,
+      addPoll,
       eventRsvps,
       toggleEventRsvp,
       wavedIds,

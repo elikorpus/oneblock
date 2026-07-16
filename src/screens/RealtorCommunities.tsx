@@ -20,7 +20,7 @@ export function RealtorCommunitiesScreen({ navigation }: Props) {
       <View style={styles.header}>
         <View>
           <Text style={styles.wordmark}>
-            neighborly<Text style={{ color: theme.colors.grass }}>.</Text>
+            oneblock<Text style={{ color: theme.colors.grass }}>.</Text>
           </Text>
           <Text style={styles.subtitle}>{realtorProfile?.name ? `${realtorProfile.name} · Realtor` : 'Realtor'}</Text>
         </View>
@@ -30,7 +30,7 @@ export function RealtorCommunitiesScreen({ navigation }: Props) {
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.h1}>Every community on Neighborly</Text>
+        <Text style={styles.h1}>Every community on OneBlock</Text>
         <Text style={styles.lead}>Scores are computed from anonymous, community-level activity — never individual residents.</Text>
 
         {sorted.length === 0 && <Text style={styles.empty}>No communities yet.</Text>}

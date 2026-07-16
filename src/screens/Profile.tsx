@@ -9,7 +9,7 @@ import { Chip } from '../components/Chip';
 import { Input } from '../components/Input';
 import { PillTag } from '../components/PillTag';
 import { SectionLabel } from '../components/SectionLabel';
-import { INTEREST_POOL, TENURE } from '../data/constants';
+import { INTEREST_GROUPS, TENURE } from '../data/constants';
 import { FamilyMember } from '../data/types';
 import { supabase } from '../lib/supabase';
 import { AppStackParamList } from '../navigation/types';
@@ -279,19 +279,30 @@ export function ProfileScreen({ navigation }: Props) {
         </Card>
 
         <SectionLabel>Your interests</SectionLabel>
-        <View style={[styles.chipWrap, { marginBottom: 24 }]}>
-          {editing
-            ? INTEREST_POOL.map((i) => (
-                <Chip key={i} active={draft.interests.includes(i)} onPress={() => toggleInterest(i)}>
-                  {i}
-                </Chip>
-              ))
-            : v.interests.map((i) => (
-                <Chip key={i} active>
-                  {i}
-                </Chip>
-              ))}
-        </View>
+        {editing ? (
+          <View style={{ marginBottom: 24 }}>
+            {INTEREST_GROUPS.map((group) => (
+              <View key={group.category} style={{ marginBottom: 12 }}>
+                <Text style={styles.interestGroupLabel}>{group.category}</Text>
+                <View style={styles.chipWrap}>
+                  {group.items.map((i) => (
+                    <Chip key={i} active={draft.interests.includes(i)} onPress={() => toggleInterest(i)}>
+                      {i}
+                    </Chip>
+                  ))}
+                </View>
+              </View>
+            ))}
+          </View>
+        ) : (
+          <View style={[styles.chipWrap, { marginBottom: 24 }]}>
+            {v.interests.map((i) => (
+              <Chip key={i} active>
+                {i}
+              </Chip>
+            ))}
+          </View>
+        )}
 
         {editing ? (
           <Pressable onPress={save} style={styles.saveBtn}>
@@ -340,6 +351,13 @@ const styles = StyleSheet.create({
   rowGap: { flexDirection: 'row', gap: 12 },
   fieldLabel: { fontSize: 11, fontFamily: theme.font.bodyBold, color: theme.colors.inkSoft, letterSpacing: theme.label.tracking, textTransform: 'uppercase' },
   chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },
+  interestGroupLabel: {
+    fontSize: 11,
+    fontFamily: theme.font.bodyBold,
+    color: theme.colors.inkSoft,
+    letterSpacing: theme.label.tracking,
+    textTransform: 'uppercase',
+  },
   staticRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10 },
   rowBorder: { borderBottomWidth: theme.border.width, borderBottomColor: theme.colors.line },
   staticKey: { fontSize: 13, fontFamily: theme.font.bodyBold, color: theme.colors.inkSoft },

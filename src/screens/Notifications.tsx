@@ -85,7 +85,7 @@ export function NotificationsScreen({ navigation }: Props) {
             {earlier.map(Row)}
           </View>
         )}
-        <Text style={styles.footnote}>That's everything. Neighborly keeps it under ~5 pushes a week.</Text>
+        <Text style={styles.footnote}>That's everything. OneBlock keeps it under ~5 pushes a week.</Text>
       </ScrollView>
     </View>
   );

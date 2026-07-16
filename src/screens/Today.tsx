@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Avatar } from '../components/Avatar';
 import { Card } from '../components/Card';
+import { PersonLink } from '../components/PersonLink';
 import { PopIn } from '../components/PopIn';
 import { SectionLabel } from '../components/SectionLabel';
 import { buildEmptyStates } from '../data/emptyStates';
@@ -187,13 +188,15 @@ export function TodayScreen() {
           {posts.map((p) => (
             <Card key={p.id} style={{ marginBottom: 12 }}>
               <View style={styles.rowCenter}>
-                <Avatar initials={p.initials} bg={p.bg} size={36} tilt={3} />
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.postWho}>
-                    {p.who} <Text style={styles.postWhen}>· {p.createdAt}</Text>
-                  </Text>
-                  <Text style={styles.postText}>{p.text}</Text>
-                </View>
+                <PersonLink personId={p.authorId} style={styles.rowCenter}>
+                  <Avatar initials={p.initials} bg={p.bg} size={36} tilt={3} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.postWho}>
+                      {p.who} <Text style={styles.postWhen}>· {p.createdAt}</Text>
+                    </Text>
+                    <Text style={styles.postText}>{p.text}</Text>
+                  </View>
+                </PersonLink>
                 {isBoardMember && (
                   <Pressable
                     hitSlop={8}

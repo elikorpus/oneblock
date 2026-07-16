@@ -1,4 +1,4 @@
--- Neighborly — migration 006: stop residents from self-promoting to the HOA board
+-- OneBlock — migration 006: stop residents from self-promoting to the HOA board
 --
 -- Bug: "profiles_update_own" only checks that a resident is updating their own
 -- row (id = auth.uid()) — it never restricts which columns they change. Any

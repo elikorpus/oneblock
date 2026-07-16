@@ -1,4 +1,4 @@
--- Neighborly — migration 003: pet type on family members
+-- OneBlock — migration 003: pet type on family members
 -- Run this once in the Supabase SQL Editor.
 -- Safe to re-run.
 

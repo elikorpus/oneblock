@@ -18,7 +18,7 @@ export function AppHeader({ onOpenNotifications, onOpenProfile }: AppHeaderProps
     <View style={styles.row}>
       <View style={styles.left}>
         <Text style={styles.wordmark}>
-          neighborly<Text style={{ color: theme.colors.grass }}>.</Text>
+          oneblock<Text style={{ color: theme.colors.grass }}>.</Text>
         </Text>
       </View>
       <View style={styles.right}>

@@ -1,4 +1,4 @@
--- Neighborly — initial schema
+-- OneBlock — initial schema
 -- Run this once in the Supabase SQL Editor (Project → SQL Editor → New query → paste → Run).
 -- Safe to re-run: every statement is guarded with IF NOT EXISTS / OR REPLACE / DROP POLICY IF EXISTS.
 

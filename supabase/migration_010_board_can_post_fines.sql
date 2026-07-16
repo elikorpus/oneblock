@@ -1,4 +1,4 @@
--- Neighborly — migration 010: let HOA board members post a fine for the community to vote on
+-- OneBlock — migration 010: let HOA board members post a fine for the community to vote on
 --
 -- Bug: public.fines had a select policy only — nothing, not even the board, could
 -- ever insert a new one through the app. The "Vote" tab could only ever show

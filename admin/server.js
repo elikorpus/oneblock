@@ -344,6 +344,6 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 const port = Number(PORT) || 4287;
 app.listen(port, '127.0.0.1', () => {
-  console.log(`Neighborly admin dashboard running at http://localhost:${port}`);
+  console.log(`OneBlock admin dashboard running at http://localhost:${port}`);
   console.log('This server holds the Supabase service role key — do not expose it beyond your own machine.');
 });

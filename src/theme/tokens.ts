@@ -1,5 +1,5 @@
 /**
- * Neighborly design tokens — ported verbatim from the Claude Design system
+ * OneBlock design tokens — ported verbatim from the Claude Design system
  * (tokens/colors.css, typography.css, spacing.css, effects.css).
  */
 

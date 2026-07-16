@@ -9,7 +9,7 @@ export type AvatarProps = {
   tilt?: number;
 };
 
-/** Sticker-style ink-outlined initials avatar — the dominant identity glyph in Neighborly. */
+/** Sticker-style ink-outlined initials avatar — the dominant identity glyph in OneBlock. */
 export function Avatar({ initials, bg, size = 44, tilt = 0 }: AvatarProps) {
   return (
     <View

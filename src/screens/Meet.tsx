@@ -54,7 +54,7 @@ export function MeetScreen() {
               style={[styles.hiBtn, { backgroundColor: hi ? theme.colors.paper : theme.colors.grass }]}
             >
               <Text style={[styles.hiText, { color: hi ? theme.colors.grassDeep : '#fff' }]}>
-                {hi ? (n.connected ? "Connected 🎉 — Maya waved back" : 'Hi sent — connect if they wave back') : 'Say hi 👋'}
+                {hi ? (n.connected ? `Connected 🎉 — ${n.name.split(' ')[0]} waved back` : 'Hi sent — connect if they wave back') : 'Say hi 👋'}
               </Text>
             </Pressable>
           </Card>

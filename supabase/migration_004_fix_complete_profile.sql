@@ -1,4 +1,4 @@
--- Neighborly — migration 004: fix ambiguous column reference in complete_profile
+-- OneBlock — migration 004: fix ambiguous column reference in complete_profile
 --
 -- Bug: the `signup_key` parameter had the exact same name as the `signup_key`
 -- column on public.communities. Postgres could not disambiguate them even with

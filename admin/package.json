@@ -1,8 +1,8 @@
 {
-  "name": "neighborly-admin",
+  "name": "oneblock-admin",
   "version": "1.0.0",
   "private": true,
-  "description": "Local-only admin dashboard for Neighborly — communities, HOA board, and realtor management. Never deploy this publicly; it holds the Supabase service role key.",
+  "description": "Local-only admin dashboard for OneBlock — communities, HOA board, and realtor management. Never deploy this publicly; it holds the Supabase service role key.",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"

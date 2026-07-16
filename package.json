@@ -1,8 +1,8 @@
 {
-  "name": "neighborly",
+  "name": "oneblock",
   "version": "1.0.0",
   "main": "index.ts",
-  "homepage": "https://elikorpus.github.io/neighborly/",
+  "homepage": "https://elikorpus.github.io/oneblock/",
   "dependencies": {
     "@expo-google-fonts/fraunces": "^0.4.1",
     "@expo-google-fonts/instrument-sans": "^0.4.2",

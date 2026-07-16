@@ -1,4 +1,4 @@
--- Neighborly — migration 005: production features
+-- OneBlock — migration 005: production features
 --
 -- Replaces the remaining pieces of the app that were still faked client-side
 -- (a random neighborhood score, a hardcoded realtor list, a hardcoded

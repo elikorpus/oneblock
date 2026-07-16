@@ -12,7 +12,7 @@ export function EmptyNotifications({ onBack }: { onBack: () => void }) {
         <Blob emoji="🔔" tint={theme.colors.mint} />
         <Text style={styles.title}>You're all{'\n'}caught up.</Text>
         <Text style={styles.body}>
-          When neighbors wave, RSVP, or your board posts, you'll hear about it here — Neighborly keeps it under ~5
+          When neighbors wave, RSVP, or your board posts, you'll hear about it here — OneBlock keeps it under ~5
           pushes a week.
         </Text>
       </View>

@@ -2,10 +2,11 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import * as ExpoCalendar from 'expo-calendar';
 import { Calendar, Check, MapPin } from 'lucide-react-native';
 import React, { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Avatar } from '../components/Avatar';
 import { BackBar } from '../components/BackBar';
 import { Card } from '../components/Card';
+import { PersonLink } from '../components/PersonLink';
 import { SectionLabel } from '../components/SectionLabel';
 import { EventItem } from '../data/types';
 import { confirmAndRun, notify } from '../lib/alert';
@@ -35,9 +36,13 @@ function parseEventStart(ev: EventItem): Date {
 }
 
 async function addToDeviceCalendar(ev: EventItem) {
+  if (Platform.OS === 'web') {
+    notify('Not available on web', "You can't add events to the calendar on the web — try this from the OneBlock app on your phone.");
+    return;
+  }
   const perm = await ExpoCalendar.requestCalendarPermissions();
   if (!perm.granted) {
-    notify('Calendar access needed', 'Enable calendar access for Neighborly in Settings to add this event.');
+    notify('Calendar access needed', 'Enable calendar access for OneBlock in Settings to add this event.');
     return;
   }
   const calendars = await ExpoCalendar.getCalendars(ExpoCalendar.EntityTypes.EVENT);
@@ -111,13 +116,13 @@ export function EventDetailScreen({ route, navigation }: Props) {
 
           <SectionLabel>Hosted by</SectionLabel>
           <Card style={{ marginBottom: 20 }}>
-            <View style={styles.rowCenter}>
+            <PersonLink personId={'id' in ev.host ? ev.host.id : undefined} style={styles.rowCenter}>
               <Avatar initials={ev.host.initials} bg={ev.host.bg} size={40} tilt={-3} />
               <View style={{ flex: 1 }}>
                 <Text style={styles.hostName}>{ev.host.name}</Text>
                 <Text style={styles.hostRole}>Organizer</Text>
               </View>
-            </View>
+            </PersonLink>
           </Card>
 
           <SectionLabel>Who's going</SectionLabel>

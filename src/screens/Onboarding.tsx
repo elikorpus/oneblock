@@ -1,9 +1,10 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { ArrowRight, MapPin, Trash2 } from 'lucide-react-native';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
   Dimensions,
+  Easing,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
@@ -19,7 +20,7 @@ import { Avatar } from '../components/Avatar';
 import { Button } from '../components/Button';
 import { Chip } from '../components/Chip';
 import { Input } from '../components/Input';
-import { ONBOARDING_INTERESTS, TENURE } from '../data/constants';
+import { INTEREST_GROUPS, TENURE } from '../data/constants';
 import { FamilyMember, House } from '../data/types';
 import { supabase } from '../lib/supabase';
 import { AuthStackParamList } from '../navigation/types';
@@ -28,8 +29,31 @@ import { theme } from '../theme';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Onboarding'>;
 
-const CONFETTI = ['🎉', '👋', '🌮', '🐶', '🎾', '☕', '📚', '🌱', '🏡', '✨', '🎉', '👋'];
+const CONFETTI_EMOJIS = ['🎉', '👋', '🌮', '🐶', '🎾', '☕', '📚', '🌱', '🏡', '✨', '🎈', '🌻', '🍕', '⚽', '🎨', '🐾'];
+const CONFETTI_COUNT = 28;
 const TOTAL_STEPS = 5;
+
+type ConfettiSpec = {
+  emoji: string;
+  left: number;
+  size: number;
+  duration: number;
+  delay: number;
+  sway: number;
+  rotateDir: 1 | -1;
+};
+
+function makeConfettiSpecs(): ConfettiSpec[] {
+  return Array.from({ length: CONFETTI_COUNT }, (_, i) => ({
+    emoji: CONFETTI_EMOJIS[i % CONFETTI_EMOJIS.length],
+    left: 1 + Math.random() * 96,
+    size: 14 + Math.random() * 18,
+    duration: 3000 + Math.random() * 2400,
+    delay: Math.random() * 3200,
+    sway: 12 + Math.random() * 26,
+    rotateDir: Math.random() > 0.5 ? 1 : -1,
+  }));
+}
 
 function Dots({ step }: { step: number }) {
   return (
@@ -47,32 +71,51 @@ function Dots({ step }: { step: number }) {
   );
 }
 
-function ConfettiPiece({ index }: { index: number }) {
+function ConfettiPiece({ spec }: { spec: ConfettiSpec }) {
   const progress = useRef(new Animated.Value(0)).current;
   const { height } = Dimensions.get('window');
   useEffect(() => {
-    const duration = 2600 + (index % 5) * 500;
-    const delay = (index % 7) * 350;
-    const anim = Animated.loop(Animated.timing(progress, { toValue: 1, duration: duration + delay, useNativeDriver: true }));
+    const anim = Animated.loop(
+      Animated.sequence([
+        Animated.delay(spec.delay),
+        Animated.timing(progress, {
+          toValue: 1,
+          duration: spec.duration,
+          easing: Easing.in(Easing.quad),
+          useNativeDriver: true,
+        }),
+      ])
+    );
     anim.start();
     return () => anim.stop();
-  }, [index, progress]);
+  }, [progress, spec.delay, spec.duration]);
 
   return (
     <Animated.Text
       style={{
         position: 'absolute',
-        left: `${6 + index * 8}%`,
-        top: -20,
-        fontSize: 16 + (index % 3) * 6,
-        opacity: progress.interpolate({ inputRange: [0, 0.12, 0.9, 1], outputRange: [0, 1, 1, 0] }),
+        left: `${spec.left}%`,
+        top: -24,
+        fontSize: spec.size,
+        opacity: progress.interpolate({ inputRange: [0, 0.08, 0.85, 1], outputRange: [0, 1, 1, 0] }),
         transform: [
-          { translateY: progress.interpolate({ inputRange: [0, 1], outputRange: [0, height * 0.7] }) },
-          { rotate: progress.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '340deg'] }) },
+          { translateY: progress.interpolate({ inputRange: [0, 1], outputRange: [0, height * 0.85] }) },
+          {
+            translateX: progress.interpolate({
+              inputRange: [0, 0.25, 0.5, 0.75, 1],
+              outputRange: [0, spec.sway, 0, -spec.sway, 0],
+            }),
+          },
+          {
+            rotate: progress.interpolate({
+              inputRange: [0, 1],
+              outputRange: ['0deg', `${360 * spec.rotateDir}deg`],
+            }),
+          },
         ],
       }}
     >
-      {CONFETTI[index]}
+      {spec.emoji}
     </Animated.Text>
   );
 }
@@ -106,6 +149,7 @@ export function OnboardingScreen({ navigation }: Props) {
   const [picked, setPicked] = useState<string[]>([]);
   const [finishing, setFinishing] = useState(false);
   const [finishError, setFinishError] = useState('');
+  const confettiSpecs = useMemo(() => makeConfettiSpecs(), []);
 
   const emailOk = /\S+@\S+\.\S+/.test(email.trim());
   const codeOk = code.trim().length >= 4 && emailOk && password.length >= 6;
@@ -118,7 +162,7 @@ export function OnboardingScreen({ navigation }: Props) {
     const { data, error } = await supabase.rpc('validate_signup_key', { key: code.trim() });
     if (error || !data || data.length === 0) {
       setCheckingCode(false);
-      setCodeError("That code doesn't match a Neighborly community yet.");
+      setCodeError("That code doesn't match a OneBlock community yet.");
       return;
     }
     const houses = await listOpenHouses(code.trim());
@@ -173,7 +217,7 @@ export function OnboardingScreen({ navigation }: Props) {
           <View style={styles.header}>
             <View style={styles.headerRow}>
               <Text style={styles.wordmark}>
-                neighborly<Text style={{ color: theme.colors.grass }}>.</Text>
+                oneblock<Text style={{ color: theme.colors.grass }}>.</Text>
               </Text>
               <Pressable onPress={() => (step === 0 ? navigation.goBack() : setStep(step - 1))}>
                 <Text style={styles.backText}>Back</Text>
@@ -393,17 +437,22 @@ export function OnboardingScreen({ navigation }: Props) {
           <ScrollView contentContainerStyle={[styles.stepContent, { flexGrow: 1 }]} keyboardShouldPersistTaps="handled">
             <Text style={styles.h1Sm}>What are{'\n'}you into?</Text>
             <Text style={styles.lead}>Powers Neighbor Match. Only shown to matched neighbors.</Text>
-            <View style={[styles.chipWrap, { marginTop: 20 }]}>
-              {ONBOARDING_INTERESTS.map((i) => (
-                <Chip
-                  key={i}
-                  active={picked.includes(i)}
-                  onPress={() => setPicked((p) => (p.includes(i) ? p.filter((x) => x !== i) : [...p, i]))}
-                >
-                  {i}
-                </Chip>
-              ))}
-            </View>
+            {INTEREST_GROUPS.map((group) => (
+              <View key={group.category} style={{ marginTop: 16 }}>
+                <Text style={styles.interestGroupLabel}>{group.category}</Text>
+                <View style={styles.chipWrap}>
+                  {group.items.map((i) => (
+                    <Chip
+                      key={i}
+                      active={picked.includes(i)}
+                      onPress={() => setPicked((p) => (p.includes(i) ? p.filter((x) => x !== i) : [...p, i]))}
+                    >
+                      {i}
+                    </Chip>
+                  ))}
+                </View>
+              </View>
+            ))}
             <View style={{ marginTop: 'auto', paddingTop: 24 }}>
               <Text style={styles.pickedCount}>{picked.length} selected</Text>
               <Button
@@ -421,8 +470,8 @@ export function OnboardingScreen({ navigation }: Props) {
 
         {step === 5 && (
           <View style={styles.confettiScreen}>
-            {CONFETTI.map((_, i) => (
-              <ConfettiPiece key={i} index={i} />
+            {confettiSpecs.map((spec, i) => (
+              <ConfettiPiece key={i} spec={spec} />
             ))}
             <View style={styles.confettiCenter}>
               <View style={styles.confettiBadge}>
@@ -439,7 +488,7 @@ export function OnboardingScreen({ navigation }: Props) {
             </View>
             <View style={{ paddingHorizontal: 24, paddingBottom: 32 }}>
               <Button onPress={finish} loading={finishing}>
-                Open Neighborly
+                Open OneBlock
               </Button>
             </View>
           </View>
@@ -505,6 +554,14 @@ const styles = StyleSheet.create({
   errorText: { fontSize: 12.5, color: theme.colors.red, fontFamily: theme.font.bodySemibold, textAlign: 'center' },
   rowGap: { flexDirection: 'row', gap: 12 },
   fieldLabel: { fontSize: 11, fontFamily: theme.font.bodyBold, color: theme.colors.inkSoft, letterSpacing: theme.label.tracking, textTransform: 'uppercase' },
+  interestGroupLabel: {
+    fontSize: 11,
+    fontFamily: theme.font.bodyBold,
+    color: theme.colors.inkSoft,
+    letterSpacing: theme.label.tracking,
+    textTransform: 'uppercase',
+    marginBottom: 8,
+  },
   chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },
   famRow: {
     backgroundColor: theme.colors.card,

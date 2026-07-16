@@ -47,7 +47,7 @@ export function RealtorCommunityDetailScreen({ route, navigation }: Props) {
         {
           label: 'Households',
           value: `${breakdown.householdCount} of ${breakdown.housesTotal}`,
-          note: breakdown.housesTotal > 0 ? `${Math.round((breakdown.householdCount / breakdown.housesTotal) * 100)}% of homes occupied on Neighborly` : 'No addresses on file yet',
+          note: breakdown.housesTotal > 0 ? `${Math.round((breakdown.householdCount / breakdown.housesTotal) * 100)}% of homes occupied on OneBlock` : 'No addresses on file yet',
         },
         { label: 'Families with kids', value: String(breakdown.kidsCount), note: 'households with kids in this community' },
         { label: 'Events', value: String(breakdown.eventsLast90d), note: 'in the last 90 days' },

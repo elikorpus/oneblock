@@ -1,4 +1,4 @@
--- Neighborly — migration 009: make "message the board" actually reach the board
+-- OneBlock — migration 009: make "message the board" actually reach the board
 --
 -- Three bugs in the original design:
 --

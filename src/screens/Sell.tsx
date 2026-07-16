@@ -43,7 +43,7 @@ export function SellScreen({ navigation }: Props) {
         <Card style={{ marginBottom: 20, backgroundColor: theme.colors.ink, borderWidth: 0 }}>
           <Text style={styles.homeLabel}>Your home · {myAddress}</Text>
           <Text style={styles.homeSub}>
-            Neighborly doesn't guess a number — a certified realtor gives you a real walkthrough valuation.
+            OneBlock doesn't guess a number — a certified realtor gives you a real walkthrough valuation.
           </Text>
           <View style={styles.homeActions}>
             <Pressable style={styles.listBtn} onPress={() => sendLead('list', 'list')}>
@@ -125,7 +125,7 @@ export function SellScreen({ navigation }: Props) {
 
         <SectionLabel>Explore neighborhoods</SectionLabel>
         {neighborhoods.length === 0 ? (
-          <Text style={styles.footnote}>Neighborhood comparisons will show up here as more communities join Neighborly.</Text>
+          <Text style={styles.footnote}>Neighborhood comparisons will show up here as more communities join OneBlock.</Text>
         ) : (
           neighborhoods.map((n) => (
             <Card key={n.id} style={[{ marginBottom: 12 }, n.you && { borderColor: theme.colors.grass, borderWidth: 2 }]}>

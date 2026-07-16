@@ -55,7 +55,7 @@ export function HouseDetailScreen({ route, navigation }: Props) {
           <View style={styles.emptyCard}>
             <Text style={styles.emptyEmoji}>🏡</Text>
             <Text style={styles.emptyTitle}>No one has claimed this property yet.</Text>
-            <Text style={styles.emptyBody}>When a neighbor moves in and joins Neighborly, their page will show up here.</Text>
+            <Text style={styles.emptyBody}>When a neighbor moves in and joins OneBlock, their page will show up here.</Text>
           </View>
         )}
       </ScrollView>

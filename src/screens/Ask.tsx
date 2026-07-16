@@ -6,6 +6,7 @@ import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { Chip } from '../components/Chip';
 import { Input } from '../components/Input';
+import { PersonLink } from '../components/PersonLink';
 import { PillTag } from '../components/PillTag';
 import { buildEmptyStates } from '../data/emptyStates';
 import { confirmAndRun } from '../lib/alert';
@@ -22,7 +23,7 @@ const RECOMMEND_PLACEHOLDER = 'e.g. I need an electrician who can come out this 
 
 export function AskScreen() {
   const navigation = useAppNavigation();
-  const { asks, addAsk, fines, votes, vote, addFine, pros, communityName, isBoardMember, deleteAsk, hiddenAskIds, hideAsk, unhideAsk } = useAppState();
+  const { asks, addAsk, polls, votes, vote, addPoll, pros, communityName, isBoardMember, deleteAsk, hiddenAskIds, hideAsk, unhideAsk } = useAppState();
   const [tab, setTab] = useState<TabName>('Open asks');
   const [showEmpty, setShowEmpty] = useState(true);
 
@@ -30,11 +31,11 @@ export function AskScreen() {
   const [composeKind, setComposeKind] = useState<'Ask' | 'Recommend'>('Ask');
   const [draft, setDraft] = useState('');
 
-  const [composingFine, setComposingFine] = useState(false);
-  const [fineDraft, setFineDraft] = useState({ desc: '', addr: '', amount: '', comment: '' });
-  const [fineError, setFineError] = useState('');
+  const [composingPoll, setComposingPoll] = useState(false);
+  const [pollDraft, setPollDraft] = useState({ title: '', description: '', optionA: '', optionB: '' });
+  const [pollError, setPollError] = useState('');
 
-  if (asks.length === 0 && fines.length === 0 && pros.length === 0 && showEmpty)
+  if (asks.length === 0 && polls.length === 0 && pros.length === 0 && showEmpty)
     return (
       <EmptyTab
         config={buildEmptyStates(communityName).ask}
@@ -53,16 +54,20 @@ export function AskScreen() {
     setComposing(false);
   };
 
-  const submitFine = async () => {
-    const amount = Number(fineDraft.amount);
-    if (!fineDraft.desc.trim() || !fineDraft.addr.trim() || !Number.isFinite(amount) || amount <= 0) {
-      setFineError('Add a description, address, and a valid amount.');
+  const submitPoll = async () => {
+    if (!pollDraft.title.trim() || !pollDraft.optionA.trim() || !pollDraft.optionB.trim()) {
+      setPollError('Add a title and both options.');
       return;
     }
-    setFineError('');
-    await addFine({ desc: fineDraft.desc.trim(), addr: fineDraft.addr.trim(), amount, comment: fineDraft.comment.trim() });
-    setFineDraft({ desc: '', addr: '', amount: '', comment: '' });
-    setComposingFine(false);
+    setPollError('');
+    await addPoll({
+      title: pollDraft.title.trim(),
+      description: pollDraft.description.trim(),
+      optionA: pollDraft.optionA.trim(),
+      optionB: pollDraft.optionB.trim(),
+    });
+    setPollDraft({ title: '', description: '', optionA: '', optionB: '' });
+    setComposingPoll(false);
   };
 
   return (
@@ -131,10 +136,14 @@ export function AskScreen() {
           .map((p, i) => (
             <Card key={p.id} onPress={() => navigation.navigate('ChatThread', { askId: p.id })} style={{ marginBottom: 12 }}>
               <View style={styles.askRow}>
-                <Avatar initials={p.initials} bg={p.bg} size={38} tilt={i % 2 ? 3 : -3} />
+                <PersonLink personId={p.authorId}>
+                  <Avatar initials={p.initials} bg={p.bg} size={38} tilt={i % 2 ? 3 : -3} />
+                </PersonLink>
                 <View style={{ flex: 1 }}>
                   <View style={styles.askHead}>
-                    <Text style={styles.askWho}>{p.who}</Text>
+                    <PersonLink personId={p.authorId}>
+                      <Text style={styles.askWho}>{p.who}</Text>
+                    </PersonLink>
                     <PillTag uppercase>{p.kind}</PillTag>
                   </View>
                   <Text style={styles.askText}>{p.text}</Text>
@@ -225,23 +234,28 @@ export function AskScreen() {
             <View style={{ flexDirection: 'row', gap: 8 }}>
               <Scale size={16} color={theme.colors.grassDeep} />
               <Text style={styles.voteIntro}>
-                Was this fine fair? Votes are anonymous and advisory — the board reviews the community's read before
-                appeals. HOA members need to post votes for residents to weigh in on.
+                Votes are anonymous and advisory. HOA members post a question with two options for residents to weigh
+                in on.
               </Text>
             </View>
           </Card>
 
           {isBoardMember &&
-            (composingFine ? (
+            (composingPoll ? (
               <Card style={{ marginBottom: 16 }}>
-                <Input label="Description" value={fineDraft.desc} onChangeText={(t) => setFineDraft({ ...fineDraft, desc: t })} placeholder="e.g. Trash cans left out overnight" />
-                <Input label="Address" value={fineDraft.addr} onChangeText={(t) => setFineDraft({ ...fineDraft, addr: t })} placeholder="e.g. 21203 Kings River Point" />
-                <Input label="Amount" value={fineDraft.amount} onChangeText={(t) => setFineDraft({ ...fineDraft, amount: t })} placeholder="e.g. 50" keyboardType="decimal-pad" />
-                <Input label="Board's comment" value={fineDraft.comment} onChangeText={(t) => setFineDraft({ ...fineDraft, comment: t })} placeholder="Note on the violation" />
-                {!!fineError && <Text style={styles.errorText}>{fineError}</Text>}
+                <Input label="Title" value={pollDraft.title} onChangeText={(t) => setPollDraft({ ...pollDraft, title: t })} placeholder="e.g. New playground equipment?" />
+                <Input
+                  label="Description"
+                  value={pollDraft.description}
+                  onChangeText={(t) => setPollDraft({ ...pollDraft, description: t })}
+                  placeholder="Any context residents should know"
+                />
+                <Input label="Option 1" value={pollDraft.optionA} onChangeText={(t) => setPollDraft({ ...pollDraft, optionA: t })} placeholder="e.g. Yes, replace it" />
+                <Input label="Option 2" value={pollDraft.optionB} onChangeText={(t) => setPollDraft({ ...pollDraft, optionB: t })} placeholder="e.g. No, keep as is" />
+                {!!pollError && <Text style={styles.errorText}>{pollError}</Text>}
                 <View style={styles.rowGap}>
                   <View style={{ flex: 1 }}>
-                    <Button variant="dark" size="md" onPress={submitFine}>
+                    <Button variant="dark" size="md" onPress={submitPoll}>
                       Post for a vote
                     </Button>
                   </View>
@@ -250,8 +264,8 @@ export function AskScreen() {
                     size="md"
                     block={false}
                     onPress={() => {
-                      setComposingFine(false);
-                      setFineError('');
+                      setComposingPoll(false);
+                      setPollError('');
                     }}
                     style={{ paddingHorizontal: 16 }}
                   >
@@ -261,7 +275,7 @@ export function AskScreen() {
               </Card>
             ) : (
               <Button
-                onPress={() => setComposingFine(true)}
+                onPress={() => setComposingPoll(true)}
                 variant="outline"
                 leading={<Plus size={16} color={theme.colors.ink} />}
                 style={{ marginBottom: 16 }}
@@ -270,39 +284,42 @@ export function AskScreen() {
               </Button>
             ))}
 
-          {fines.map((f) => {
-            const total = f.fair + f.unfair;
-            const fairPct = Math.round((f.fair / total) * 100);
-            const voted = votes[f.id];
+          {polls.length === 0 && !composingPoll && (
+            <Text style={styles.emptyNote}>No votes yet — check back once the board posts one.</Text>
+          )}
+
+          {polls.map((p) => {
+            const total = p.votesA + p.votesB;
+            const pctA = total > 0 ? Math.round((p.votesA / total) * 100) : 0;
+            const voted = votes[p.id];
             return (
-              <Card key={f.id} style={{ marginBottom: 12 }}>
-                <View style={styles.rowBetween}>
-                  <Text style={styles.fineDesc}>{f.desc}</Text>
-                  <Text style={styles.fineAmount}>${f.amount}</Text>
-                </View>
-                <Text style={styles.fineMeta}>
-                  {f.addr} · {f.comment}
-                </Text>
+              <Card key={p.id} style={{ marginBottom: 12 }}>
+                <Text style={styles.pollTitle}>{p.title}</Text>
+                {!!p.description && <Text style={styles.pollDesc}>{p.description}</Text>}
                 {!voted ? (
                   <View style={styles.rowGap}>
-                    <Pressable style={styles.voteBtn} onPress={() => vote(f.id, 'fair')}>
-                      <Text style={styles.voteBtnText}>Fair ⚖️</Text>
+                    <Pressable style={styles.voteBtn} onPress={() => vote(p.id, 'a')}>
+                      <Text style={styles.voteBtnText}>{p.optionA}</Text>
                     </Pressable>
-                    <Pressable style={styles.voteBtn} onPress={() => vote(f.id, 'unfair')}>
-                      <Text style={styles.voteBtnText}>Unfair 🙅</Text>
+                    <Pressable style={styles.voteBtn} onPress={() => vote(p.id, 'b')}>
+                      <Text style={styles.voteBtnText}>{p.optionB}</Text>
                     </Pressable>
                   </View>
                 ) : (
                   <View style={{ marginTop: 12 }}>
                     <View style={styles.voteBar}>
-                      <View style={{ width: `${fairPct}%`, backgroundColor: theme.colors.grass }} />
+                      <View style={{ width: `${pctA}%`, backgroundColor: theme.colors.grass }} />
                       <View style={{ flex: 1, backgroundColor: theme.colors.red }} />
                     </View>
                     <View style={styles.rowBetween}>
-                      <Text style={[styles.votePct, { color: theme.colors.grassDeep }]}>{fairPct}% fair ({f.fair})</Text>
-                      <Text style={[styles.votePct, { color: theme.colors.red }]}>{100 - fairPct}% unfair ({f.unfair})</Text>
+                      <Text style={[styles.votePct, { color: theme.colors.grassDeep }]}>
+                        {pctA}% {p.optionA} ({p.votesA})
+                      </Text>
+                      <Text style={[styles.votePct, { color: theme.colors.red }]}>
+                        {100 - pctA}% {p.optionB} ({p.votesB})
+                      </Text>
                     </View>
-                    <Text style={styles.voteNote}>You voted {voted}. Sent to the board.</Text>
+                    <Text style={styles.voteNote}>You voted {voted === 'a' ? p.optionA : p.optionB}.</Text>
                   </View>
                 )}
               </Card>
@@ -351,9 +368,8 @@ const styles = StyleSheet.create({
   proBadgeText: { fontSize: 12, fontFamily: theme.font.bodyBold, color: theme.colors.marigoldInk, textAlign: 'center' },
   voteIntro: { fontSize: 13, color: theme.colors.grassDeep, fontFamily: theme.font.bodySemibold, flex: 1 },
   rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 },
-  fineDesc: { fontSize: 15, fontFamily: theme.font.bodyBold, color: theme.colors.ink, flex: 1 },
-  fineAmount: { fontFamily: theme.font.displayBold, fontSize: 18, color: theme.colors.red },
-  fineMeta: { fontSize: 12, color: theme.colors.inkSoft, marginTop: 4, fontFamily: theme.font.bodyRegular },
+  pollTitle: { fontSize: 15, fontFamily: theme.font.bodyBold, color: theme.colors.ink },
+  pollDesc: { fontSize: 12.5, color: theme.colors.inkSoft, marginTop: 4, fontFamily: theme.font.bodyRegular },
   voteBtn: { flex: 1, paddingVertical: 10, borderRadius: theme.radius.md, backgroundColor: theme.colors.paper, borderWidth: theme.border.width, borderColor: theme.colors.line, alignItems: 'center' },
   voteBtnText: { fontFamily: theme.font.bodyBold, fontSize: 13, color: theme.colors.ink },
   voteBar: { backgroundColor: theme.colors.paper, borderRadius: theme.radius.pill, height: 22, borderWidth: theme.border.width, borderColor: theme.colors.line, overflow: 'hidden', flexDirection: 'row' },

@@ -1,14 +1,14 @@
 {
   "expo": {
-    "name": "Neighborly",
-    "slug": "neighborly",
+    "name": "OneBlock",
+    "slug": "oneblock",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.neighborly",
+      "bundleIdentifier": "com.anonymous.oneblock",
       "icon": "./assets/icon.png"
     },
     "android": {
@@ -33,14 +33,14 @@
       [
         "expo-calendar",
         {
-          "calendarPermission": "Neighborly uses your calendar to add events you RSVP to."
+          "calendarPermission": "OneBlock uses your calendar to add events you RSVP to."
         }
       ],
       "@maplibre/maplibre-react-native",
       "@react-native-community/datetimepicker"
     ],
     "experiments": {
-      "baseUrl": "/neighborly"
+      "baseUrl": "/oneblock"
     }
   }
 }

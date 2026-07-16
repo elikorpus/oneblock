@@ -26,7 +26,7 @@ async function inviteNeighbors(communityName: string, signupKey: string) {
   const place = communityName || 'my neighborhood';
   const codeLine = signupKey ? `\n\nUse code ${signupKey} to sign up.` : '';
   await Share.share({
-    message: `Join me on Neighborly in ${place} — it's the private app just for our street.${codeLine}\n\nhttps://elikorpus.github.io/neighborly/`,
+    message: `Join me on OneBlock in ${place} — it's the private app just for our street.${codeLine}\n\nhttps://elikorpus.github.io/oneblock/`,
   });
 }
 

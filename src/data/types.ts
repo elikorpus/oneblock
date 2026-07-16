@@ -46,6 +46,7 @@ export type Person = {
 
 export type ClubPost = {
   id: string;
+  authorId: string;
   who: string;
   initials: string;
   bg: string;
@@ -68,7 +69,7 @@ export type Club = {
   tagline: string;
   since: string;
   spot: string;
-  lead: { name: string; initials: string; bg: string; job: string };
+  lead: { id?: string; name: string; initials: string; bg: string; job: string };
   about: string;
   next: { title: string; when: string; where: string; going: number };
   rules: string[];
@@ -167,6 +168,7 @@ export type ChatMessage = {
 
 export type Ask = {
   id: string;
+  authorId: string;
   who: string;
   initials: string;
   bg: string;
@@ -175,14 +177,14 @@ export type Ask = {
   messages: ChatMessage[];
 };
 
-export type Fine = {
+export type Poll = {
   id: string;
-  desc: string;
-  addr: string;
-  amount: number;
-  fair: number;
-  unfair: number;
-  comment: string;
+  title: string;
+  description: string;
+  optionA: string;
+  optionB: string;
+  votesA: number;
+  votesB: number;
 };
 
 export type Pro = {

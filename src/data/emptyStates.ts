@@ -31,7 +31,7 @@ export function buildEmptyStates(communityName: string): Record<EmptyStateKey, E
       tint: C.marigoldSoft,
       eyebrow: 'Neighbor Match',
       title: 'No matches\nyet.',
-      body: 'Add a few interests and Neighborly will find neighbors within a 5-minute walk. They only see you if you both say hi.',
+      body: 'Add a few interests and OneBlock will find neighbors within a 5-minute walk. They only see you if you both say hi.',
       cta: 'Add your interests',
     },
     ask: {

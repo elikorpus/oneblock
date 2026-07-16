@@ -5,6 +5,7 @@ import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-
 import { Avatar } from '../components/Avatar';
 import { BackBar } from '../components/BackBar';
 import { Card } from '../components/Card';
+import { PersonLink } from '../components/PersonLink';
 import { SectionLabel } from '../components/SectionLabel';
 import { confirmAndRun } from '../lib/alert';
 import { AppStackParamList } from '../navigation/types';
@@ -93,14 +94,14 @@ export function ClubProfileScreen({ route, navigation }: Props) {
 
           <SectionLabel>Run by</SectionLabel>
           <Card style={{ marginBottom: 20 }}>
-            <View style={styles.rowCenter}>
+            <PersonLink personId={club.lead.id} style={styles.rowCenter}>
               <Avatar initials={club.lead.initials} bg={club.lead.bg} size={44} tilt={-3} />
               <View style={{ flex: 1 }}>
                 <Text style={styles.leadName}>{club.lead.name}</Text>
                 <Text style={styles.leadJob}>{club.lead.job}</Text>
                 <Text style={styles.leadSpot}>Meets at {club.spot}</Text>
               </View>
-            </View>
+            </PersonLink>
           </Card>
 
           <SectionLabel>Members you know</SectionLabel>
@@ -151,11 +152,13 @@ export function ClubProfileScreen({ route, navigation }: Props) {
           {club.posts.map((p) => (
             <Card key={p.id} style={{ marginBottom: 12 }}>
               <View style={styles.rowCenter}>
-                <Avatar initials={p.initials} bg={p.bg} size={36} tilt={3} />
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.postWho}>{p.who}</Text>
-                  <Text style={styles.postText}>{p.text}</Text>
-                </View>
+                <PersonLink personId={p.authorId} style={styles.rowCenter}>
+                  <Avatar initials={p.initials} bg={p.bg} size={36} tilt={3} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.postWho}>{p.who}</Text>
+                    <Text style={styles.postText}>{p.text}</Text>
+                  </View>
+                </PersonLink>
                 {isBoardMember && (
                   <Pressable
                     hitSlop={8}

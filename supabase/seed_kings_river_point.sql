@@ -1,4 +1,4 @@
--- Neighborly — first community seed: Kings River Point
+-- OneBlock — first community seed: Kings River Point
 -- Run this once in the Supabase SQL Editor, after schema.sql and migration_002.
 -- Addresses hand-verified against actual rooftops (long-pressed in Google Maps),
 -- not geocoded from the address string — the original geocoded coordinates were

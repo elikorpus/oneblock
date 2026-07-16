@@ -1,4 +1,4 @@
--- Neighborly — migration 012: notify people for asks, new events, and waves
+-- OneBlock — migration 012: notify people for asks, new events, and waves
 --
 -- Only board messages ever generated a notification (migration_009). Nothing
 -- notified you when someone replied to your ask, a neighbor posted a new

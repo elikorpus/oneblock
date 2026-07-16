@@ -6,19 +6,29 @@ import { theme } from '../theme';
 export type BackBarProps = {
   title: string;
   onBack: () => void;
+  onTitlePress?: () => void;
   right?: React.ReactNode;
 };
 
 /** Sticky top bar with a back chevron, title, and optional trailing action. */
-export function BackBar({ title, onBack, right }: BackBarProps) {
+export function BackBar({ title, onBack, onTitlePress, right }: BackBarProps) {
+  const titleText = (
+    <Text style={styles.title} numberOfLines={1}>
+      {title}
+    </Text>
+  );
   return (
     <View style={styles.row}>
       <Pressable onPress={onBack} hitSlop={8} style={styles.backBtn}>
         <ChevronLeft size={20} color={theme.colors.ink} />
       </Pressable>
-      <Text style={styles.title} numberOfLines={1}>
-        {title}
-      </Text>
+      {onTitlePress ? (
+        <Pressable onPress={onTitlePress} style={{ flex: 1 }} hitSlop={4}>
+          {titleText}
+        </Pressable>
+      ) : (
+        titleText
+      )}
       {right}
     </View>
   );

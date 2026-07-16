@@ -36,7 +36,7 @@ export function EmptyTab({
           <Text style={[styles.ctaText, { color: '#fff' }]}>{config.cta}</Text>
         </View>
       </Pressable>
-      <Text style={styles.footnote}>{communityName || 'Your community'} is brand new on Neighborly. It fills up fast.</Text>
+      <Text style={styles.footnote}>{communityName || 'Your community'} is brand new on OneBlock. It fills up fast.</Text>
     </ScrollView>
   );
 }

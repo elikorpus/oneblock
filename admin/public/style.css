@@ -126,7 +126,7 @@ button:hover { background: var(--grass-deep); }
 .msg.ok { color: var(--grass-deep); }
 .msg.error, .error { color: var(--red); }
 
-.data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.data-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 18px; }
 .data-table th {
   text-align: left;
   font-size: 11px;

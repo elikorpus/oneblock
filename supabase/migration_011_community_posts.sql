@@ -1,4 +1,4 @@
--- Neighborly — migration 011: free-form community posts on the Today feed
+-- OneBlock — migration 011: free-form community posts on the Today feed
 --
 -- Adds a genuinely open "share something" post — not tied to a club, an ask,
 -- or an announcement — that any resident can write and any board member can

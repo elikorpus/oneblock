@@ -121,17 +121,18 @@ export type AskMessageRow = {
 
 export type AskHideRow = { ask_id: string; profile_id: string; created_at: string };
 
-export type FineRow = {
+export type PollRow = {
   id: string;
   community_id: string;
+  board_profile_id: string | null;
+  title: string;
   description: string;
-  address: string;
-  amount: number;
-  comment: string;
+  option_a: string;
+  option_b: string;
   created_at: string;
 };
 
-export type FineVoteRow = { fine_id: string; profile_id: string; vote: 'fair' | 'unfair' };
+export type PollVoteRow = { poll_id: string; profile_id: string; choice: 'a' | 'b' };
 
 export type ProRow = {
   id: string;
@@ -271,8 +272,8 @@ export type Database = {
       event_rsvps: Rows<EventRsvpRow>;
       asks: Rows<AskRow>;
       ask_messages: Rows<AskMessageRow>;
-      fines: Rows<FineRow>;
-      fine_votes: Rows<FineVoteRow>;
+      polls: Rows<PollRow>;
+      poll_votes: Rows<PollVoteRow>;
       pros: Rows<ProRow>;
       notifications: Rows<NotificationRow>;
       announcements: Rows<AnnouncementRow>;

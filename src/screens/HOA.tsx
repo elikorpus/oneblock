@@ -6,6 +6,7 @@ import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { Chip } from '../components/Chip';
 import { Input } from '../components/Input';
+import { PersonLink } from '../components/PersonLink';
 import { SectionLabel } from '../components/SectionLabel';
 import { buildEmptyStates } from '../data/emptyStates';
 import { useAppState } from '../state/AppStateContext';
@@ -16,7 +17,7 @@ type DisplayMessage = { from: 'you' | 'them'; text: string };
 type Mode = 'board' | 'ai' | 'announcements' | 'tools';
 
 const AI_PLACEHOLDER =
-  "The AI rules assistant will be live once Neighborly's backend is connected — for now, message the board directly.";
+  "The AI rules assistant will be live once OneBlock's backend is connected — for now, message the board directly.";
 
 const ENTITY_LABEL: Record<string, string> = {
   club_post: '💬 Club post',
@@ -191,7 +192,9 @@ export function HOAScreen() {
             const last = t.messages[t.messages.length - 1];
             return (
               <Pressable key={t.residentId} onPress={() => setOpenThreadId(t.residentId)} style={styles.threadRow}>
-                <Avatar initials={t.initials} bg={t.bg} size={40} tilt={-3} />
+                <PersonLink personId={t.residentId}>
+                  <Avatar initials={t.initials} bg={t.bg} size={40} tilt={-3} />
+                </PersonLink>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.threadName}>{t.residentName}</Text>
                   {!!last && (

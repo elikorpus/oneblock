@@ -30,11 +30,12 @@ export function HoodMap({ highlightHouse, onHousePress }: HoodMapProps) {
         <Camera ref={cameraRef} initialViewState={{ bounds, padding: CAMERA_PADDING }} />
         {houses.map((h) => {
           const isHi = h.id === highlightHouse;
-          const bg = isHi ? theme.colors.marigold : h.you ? theme.colors.grass : theme.colors.card;
+          const bg = isHi ? theme.colors.marigold : h.claimed ? theme.colors.grass : theme.colors.card;
+          const textColor = !isHi && h.claimed ? '#fff' : theme.colors.ink;
           return (
             <Marker key={h.id} id={h.id} lngLat={[h.longitude, h.latitude]} onPress={() => onHousePress(h.id)}>
               <View style={[styles.pin, { backgroundColor: bg, transform: [{ scale: isHi ? 1.15 : 1 }] }]}>
-                <Text style={styles.pinText}>{h.id}</Text>
+                <Text style={[styles.pinText, { color: textColor }]}>{h.id}</Text>
               </View>
             </Marker>
           );
@@ -68,7 +69,6 @@ const styles = StyleSheet.create({
   pinText: {
     fontSize: 10.5,
     fontFamily: theme.font.bodyBold,
-    color: theme.colors.ink,
   },
   recenterBtn: {
     position: 'absolute',
