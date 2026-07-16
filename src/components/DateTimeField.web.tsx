@@ -12,6 +12,11 @@ export type DateTimeFieldProps = {
 };
 
 const inputStyle: React.CSSProperties = {
+  // Safari renders date/time inputs with OS-native chrome by default, which can
+  // ignore width/max-width entirely. Resetting appearance forces it to respect
+  // our box sizing instead of its own preferred (wider) native control size.
+  WebkitAppearance: 'none',
+  appearance: 'none',
   fontFamily: theme.font.bodyRegular,
   fontSize: 15,
   color: theme.colors.ink,
@@ -35,22 +40,27 @@ export function DateTimeField({ label, mode, value, onChange }: DateTimeFieldPro
   return (
     <View style={styles.wrap}>
       <Text style={styles.label}>{label}</Text>
-      <input
-        type={mode}
-        value={stringValue}
-        onChange={(e) => {
-          const raw = e.target.value;
-          if (!raw) return;
-          onChange(mode === 'date' ? parseISODate(raw) : parseHM24(raw, value ?? new Date()));
-        }}
-        style={inputStyle}
-      />
+      <View style={styles.inputClip}>
+        <input
+          type={mode}
+          value={stringValue}
+          onChange={(e) => {
+            const raw = e.target.value;
+            if (!raw) return;
+            onChange(mode === 'date' ? parseISODate(raw) : parseHM24(raw, value ?? new Date()));
+          }}
+          style={inputStyle}
+        />
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   wrap: { marginBottom: 12, width: '100%', minWidth: 0 },
+  // Hard visual guarantee: even if Safari's native date/time control still wants
+  // to render wider than the box we gave it, it physically can't spill past this.
+  inputClip: { width: '100%', minWidth: 0, overflow: 'hidden', borderRadius: theme.radius.md },
   label: {
     fontFamily: theme.font.bodyBold,
     fontSize: 11,
