@@ -57,8 +57,6 @@ export function ImageCropper({ uri, aspect, onCancel, onDone }: ImageCropperProp
     );
   }, [uri]);
 
-  if (!uri) return null;
-
   const coverScale = natural ? Math.max(frameWidth / natural.w, frameHeight / natural.h) : 1;
   const totalScale = coverScale * zoom;
   const displayedW = (natural?.w ?? frameWidth) * totalScale;
@@ -131,7 +129,7 @@ export function ImageCropper({ uri, aspect, onCancel, onDone }: ImageCropperProp
   };
 
   const confirm = async () => {
-    if (!natural || busy) return;
+    if (!natural || busy || !uri) return;
     setBusy(true);
     try {
       const dx = (displayedW - frameWidth) / 2 - translate.x;
@@ -152,7 +150,7 @@ export function ImageCropper({ uri, aspect, onCancel, onDone }: ImageCropperProp
   };
 
   return (
-    <ImageCropperModal visible onRequestClose={onCancel}>
+    <ImageCropperModal visible={!!uri} onRequestClose={onCancel}>
       <View style={styles.backdrop}>
         <View style={styles.headerRow}>
           <Pressable onPress={onCancel} hitSlop={10} style={styles.iconBtn}>
@@ -171,7 +169,7 @@ export function ImageCropper({ uri, aspect, onCancel, onDone }: ImageCropperProp
                 <View style={StyleSheet.absoluteFill}>
                   {!!natural && (
                     <Image
-                      source={{ uri }}
+                      source={{ uri: uri ?? '' }}
                       style={{
                         position: 'absolute',
                         left: (frameWidth - displayedW) / 2 + translate.x,

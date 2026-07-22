@@ -40,3 +40,6 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# separately versioned in its own repo (github.com/elikorpus/oneblockwebsite)
+/oneblockwebsite
