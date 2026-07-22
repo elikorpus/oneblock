@@ -153,47 +153,6 @@ export function TodayScreen() {
         </PopIn>
       )}
 
-      {!reportingAlert ? (
-        <Pressable onPress={() => setReportingAlert(true)} style={styles.reportAlertBtn}>
-          <AlertTriangle size={14} color={theme.colors.red} />
-          <Text style={styles.reportAlertBtnText}>Report an emergency</Text>
-        </Pressable>
-      ) : (
-        <Card style={{ marginBottom: 16, borderColor: theme.colors.red, borderWidth: 2 }}>
-          <TextInput
-            value={alertTitle}
-            onChangeText={setAlertTitle}
-            placeholder="What's happening? (e.g. Break-in on Elm St)"
-            placeholderTextColor={theme.colors.inkSoft}
-            style={styles.composeInput}
-          />
-          <TextInput
-            value={alertBody}
-            onChangeText={setAlertBody}
-            placeholder="Details (optional)"
-            placeholderTextColor={theme.colors.inkSoft}
-            multiline
-            style={[styles.composeInput, { marginTop: 8, height: 60 }]}
-          />
-          <View style={styles.rowGap}>
-            <Pressable onPress={submitAlert} style={[styles.postBtn, { backgroundColor: theme.colors.red }]}>
-              <AlertTriangle size={15} color="#fff" />
-              <Text style={styles.postBtnText}>Report</Text>
-            </Pressable>
-            <Pressable
-              onPress={() => {
-                setReportingAlert(false);
-                setAlertTitle('');
-                setAlertBody('');
-              }}
-              style={styles.cancelBtn}
-            >
-              <Text style={styles.cancelBtnText}>Cancel</Text>
-            </Pressable>
-          </View>
-        </Card>
-      )}
-
       {!composing ? (
         <Pressable onPress={() => setComposing(true)} style={styles.shareBtn}>
           <Text style={styles.shareBtnText}>Share something with {communityName || 'your neighborhood'}…</Text>
@@ -348,6 +307,47 @@ export function TodayScreen() {
             </Card>
           ))}
         </View>
+      )}
+
+      {!reportingAlert ? (
+        <Pressable onPress={() => setReportingAlert(true)} style={styles.reportAlertBtn}>
+          <AlertTriangle size={14} color={theme.colors.red} />
+          <Text style={styles.reportAlertBtnText}>Report an emergency</Text>
+        </Pressable>
+      ) : (
+        <Card style={{ marginBottom: 16, borderColor: theme.colors.red, borderWidth: 2 }}>
+          <TextInput
+            value={alertTitle}
+            onChangeText={setAlertTitle}
+            placeholder="What's happening? (e.g. Break-in on Elm St)"
+            placeholderTextColor={theme.colors.inkSoft}
+            style={styles.composeInput}
+          />
+          <TextInput
+            value={alertBody}
+            onChangeText={setAlertBody}
+            placeholder="Details (optional)"
+            placeholderTextColor={theme.colors.inkSoft}
+            multiline
+            style={[styles.composeInput, { marginTop: 8, height: 60 }]}
+          />
+          <View style={styles.rowGap}>
+            <Pressable onPress={submitAlert} style={[styles.postBtn, { backgroundColor: theme.colors.red }]}>
+              <AlertTriangle size={15} color="#fff" />
+              <Text style={styles.postBtnText}>Report</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => {
+                setReportingAlert(false);
+                setAlertTitle('');
+                setAlertBody('');
+              }}
+              style={styles.cancelBtn}
+            >
+              <Text style={styles.cancelBtnText}>Cancel</Text>
+            </Pressable>
+          </View>
+        </Card>
       )}
     </ScrollView>
   );
