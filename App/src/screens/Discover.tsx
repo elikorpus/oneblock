@@ -1,5 +1,5 @@
 import { RouteProp, useRoute } from '@react-navigation/native';
-import { MapPin, Plus, Search, Store, Trash2, X } from 'lucide-react-native';
+import { MapPin, Plus, Search, Store, X } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
 import { Pressable, ScrollView, Share, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Avatar } from '../components/Avatar';
@@ -9,10 +9,8 @@ import { Chip } from '../components/Chip';
 import { Input } from '../components/Input';
 import { PillTag } from '../components/PillTag';
 import { PopIn } from '../components/PopIn';
-import { SectionLabel } from '../components/SectionLabel';
 import { StarRating } from '../components/StarRating';
 import { buildEmptyStates } from '../data/emptyStates';
-import { confirmAndRun } from '../lib/alert';
 import { useAppNavigation } from '../navigation/useAppNavigation';
 import { TabParamList } from '../navigation/types';
 import { useAppState } from '../state/AppStateContext';
@@ -21,7 +19,6 @@ import { EmptyTab } from './empty';
 import { HoodMap } from './HoodMap';
 
 const VIEWS = ['map', 'pages', 'businesses'] as const;
-const EMPTY_SPOT_DRAFT = { emoji: '📍', name: '', detail: '' };
 const EMPTY_BUSINESS_DRAFT = { name: '', category: '', phone: '', address: '', website: '', description: '' };
 
 async function inviteNeighbors(communityName: string, signupKey: string) {
@@ -35,12 +32,10 @@ async function inviteNeighbors(communityName: string, signupKey: string) {
 export function DiscoverScreen() {
   const navigation = useAppNavigation();
   const route = useRoute<RouteProp<TabParamList, 'Discover'>>();
-  const { directory, houses, spots, addSpot, communityName, signupKey, isBoardMember, deleteSpot, businesses, addBusiness } = useAppState();
+  const { directory, houses, communityName, signupKey, businesses, addBusiness } = useAppState();
   const [view, setView] = useState<(typeof VIEWS)[number]>('map');
   const [highlightHouse, setHighlightHouse] = useState<string | null>(route.params?.focusHouse ?? null);
   const [query, setQuery] = useState('');
-  const [addingSpot, setAddingSpot] = useState(false);
-  const [spotDraft, setSpotDraft] = useState(EMPTY_SPOT_DRAFT);
   const [addingBusiness, setAddingBusiness] = useState(false);
   const [businessDraft, setBusinessDraft] = useState(EMPTY_BUSINESS_DRAFT);
 
@@ -204,74 +199,6 @@ export function DiscoverScreen() {
               </Card>
             </PopIn>
           )}
-
-          <View style={{ marginTop: 20 }}>
-            <SectionLabel>Spots your neighbors added</SectionLabel>
-            {spots.length === 0 && !addingSpot && (
-              <Text style={styles.noSpots}>No spots yet — know a good taco truck or a great little library?</Text>
-            )}
-            {spots.map((s) => (
-              <View key={s.id} style={styles.spotRow}>
-                <Text style={{ fontSize: 18 }}>{s.emoji}</Text>
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  <Text style={styles.spotName}>{s.name}</Text>
-                  <Text style={styles.spotSub}>{s.detail}</Text>
-                </View>
-                {isBoardMember && (
-                  <Pressable
-                    hitSlop={8}
-                    onPress={() =>
-                      confirmAndRun('Remove this spot?', 'This removes it for everyone in the community.', 'Remove', () => deleteSpot(s.id))
-                    }
-                  >
-                    <Trash2 size={15} color={theme.colors.inkSoft} />
-                  </Pressable>
-                )}
-              </View>
-            ))}
-            {addingSpot ? (
-              <Card style={{ marginTop: 12 }}>
-                <View style={styles.rowGap}>
-                  <View style={{ width: 64 }}>
-                    <Input label="Emoji" value={spotDraft.emoji} onChangeText={(t) => setSpotDraft({ ...spotDraft, emoji: t })} />
-                  </View>
-                  <View style={{ flex: 1, minWidth: 0 }}>
-                    <Input label="Name" value={spotDraft.name} onChangeText={(t) => setSpotDraft({ ...spotDraft, name: t })} placeholder="e.g. Taco truck" />
-                  </View>
-                </View>
-                <Input
-                  label="Detail"
-                  value={spotDraft.detail}
-                  onChangeText={(t) => setSpotDraft({ ...spotDraft, detail: t })}
-                  placeholder="Where + when"
-                />
-                <View style={styles.rowGap}>
-                  <View style={{ flex: 1, minWidth: 0 }}>
-                    <Button
-                      variant="dark"
-                      size="md"
-                      onPress={async () => {
-                        if (!spotDraft.name.trim()) return;
-                        await addSpot({ emoji: spotDraft.emoji.trim() || '📍', name: spotDraft.name.trim(), detail: spotDraft.detail.trim() });
-                        setSpotDraft(EMPTY_SPOT_DRAFT);
-                        setAddingSpot(false);
-                      }}
-                    >
-                      Add spot
-                    </Button>
-                  </View>
-                  <Button variant="outline" size="md" block={false} onPress={() => setAddingSpot(false)} style={{ paddingHorizontal: 16 }}>
-                    Cancel
-                  </Button>
-                </View>
-              </Card>
-            ) : (
-              <Pressable onPress={() => setAddingSpot(true)} style={styles.addSpotBtn}>
-                <Plus size={14} color={theme.colors.grass} />
-                <Text style={styles.addSpotText}>Add a spot</Text>
-              </Pressable>
-            )}
-          </View>
         </>
       ) : (
         <>
@@ -348,7 +275,6 @@ const styles = StyleSheet.create({
   selectedPrivate: { fontSize: 12, color: theme.colors.inkSoft, fontFamily: theme.font.bodyBold, marginTop: 2 },
   viewPageBtn: { width: '100%', marginTop: 12, paddingVertical: 10, borderRadius: theme.radius.md, backgroundColor: theme.colors.grass, alignItems: 'center' },
   viewPageText: { color: '#fff', fontFamily: theme.font.bodyBold, fontSize: 13.5 },
-  spotRow: { borderBottomWidth: theme.border.width, borderBottomColor: theme.colors.line, flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 },
   spotName: { fontSize: 14, fontFamily: theme.font.bodyBold, color: theme.colors.ink },
   spotSub: { fontSize: 12, color: theme.colors.inkSoft, fontFamily: theme.font.bodyRegular },
   businessIcon: {

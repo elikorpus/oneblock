@@ -85,13 +85,6 @@ export type Club = {
   headerUrl: string | null;
 };
 
-export type Spot = {
-  id: string;
-  emoji: string;
-  name: string;
-  detail: string;
-};
-
 export type Business = {
   id: string;
   name: string;

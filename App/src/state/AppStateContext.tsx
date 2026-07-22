@@ -23,7 +23,6 @@ import {
   Pro,
   Realtor,
   RealtorProfile,
-  Spot,
 } from '../data/types';
 import {
   AlertDismissalRow,
@@ -41,7 +40,6 @@ import {
   CommunityInsightsRow,
   CommunityPostRow,
   CommunityScoreRow,
-  CommunitySpotRow,
   EventRow,
   EventRsvpRow,
   FamilyMemberRow,
@@ -190,8 +188,6 @@ type AppState = {
   polls: Poll[];
   pros: Pro[];
   realtors: Realtor[];
-  spots: Spot[];
-  addSpot: (args: { emoji: string; name: string; detail: string }) => Promise<void>;
   submitHomeLead: (kind: 'list' | 'valuation' | 'realtor_contact', realtorId?: string) => Promise<void>;
   neighborhoodScore: number | null;
   neighborhoodTrends: NeighborhoodTrend[];
@@ -256,7 +252,6 @@ type AppState = {
   moderationLog: ModerationLogEntry[];
   deleteClubPost: (postId: string) => Promise<void>;
   deleteEvent: (eventId: string) => Promise<void>;
-  deleteSpot: (spotId: string) => Promise<void>;
   deleteAsk: (askId: string) => Promise<void>;
   deletePost: (postId: string) => Promise<void>;
   deletePoll: (pollId: string) => Promise<void>;
@@ -292,7 +287,6 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   const [waveRows, setWaveRows] = useState<WaveRow[]>([]);
   const [realtorRows, setRealtorRows] = useState<RealtorRow[]>([]);
   const [clubEventRsvpRows, setClubEventRsvpRows] = useState<ClubEventRsvpRow[]>([]);
-  const [spotRows, setSpotRows] = useState<CommunitySpotRow[]>([]);
   const [communityDetails, setCommunityDetails] = useState<{ id: string; name: string; signup_key: string } | null>(null);
   const [insightsRow, setInsightsRow] = useState<CommunityInsightsRow | null>(null);
   const [scoreRows, setScoreRows] = useState<CommunityScoreRow[]>([]);
@@ -359,7 +353,6 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       waveRes,
       realtorRes,
       clubEventRsvpRes,
-      spotRes,
       communityDetailsRes,
       insightsRes,
       scoreRes,
@@ -391,7 +384,6 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       supabase.from('waves').select('*'),
       supabase.from('realtors').select('*'),
       supabase.from('club_event_rsvps').select('*'),
-      supabase.from('community_spots').select('*').order('created_at', { ascending: false }),
       supabase.rpc('current_community_details'),
       supabase.rpc('community_insights'),
       supabase.rpc('community_scores'),
@@ -432,7 +424,6 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     setWaveRows((waveRes.data ?? []) as WaveRow[]);
     setRealtorRows((realtorRes.data ?? []) as RealtorRow[]);
     setClubEventRsvpRows((clubEventRsvpRes.data ?? []) as ClubEventRsvpRow[]);
-    setSpotRows((spotRes.data ?? []) as CommunitySpotRow[]);
     const details = (communityDetailsRes.data as { id: string; name: string; signup_key: string }[] | null) ?? [];
     setCommunityDetails(details[0] ?? null);
     const insights = (insightsRes.data as CommunityInsightsRow[] | null) ?? [];
@@ -479,7 +470,6 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       setWaveRows([]);
       setRealtorRows([]);
       setClubEventRsvpRows([]);
-      setSpotRows([]);
       setCommunityDetails(null);
       setInsightsRow(null);
       setScoreRows([]);
@@ -621,11 +611,6 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   const realtors: Realtor[] = useMemo(
     () => realtorRows.map((r) => ({ id: r.id, name: r.name, tag: r.tag, dealsNote: r.deals_note, phone: r.phone, email: r.email })),
     [realtorRows]
-  );
-
-  const spots: Spot[] = useMemo(
-    () => spotRows.map((s) => ({ id: s.id, emoji: s.emoji, name: s.name, detail: s.detail })),
-    [spotRows]
   );
 
   const businesses: Business[] = useMemo(() => {
@@ -1511,37 +1496,6 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     [myRow]
   );
 
-  const addSpot = useCallback(
-    async (args: { emoji: string; name: string; detail: string }) => {
-      if (!myRow) return;
-      const tempId = makeTempId();
-      setSpotRows((rows) => [
-        {
-          id: tempId,
-          community_id: myRow.community_id,
-          added_by_profile_id: myRow.id,
-          emoji: args.emoji,
-          name: args.name,
-          detail: args.detail,
-          created_at: new Date().toISOString(),
-        },
-        ...rows,
-      ]);
-      const { data, error } = await supabase
-        .from('community_spots')
-        .insert({ community_id: myRow.community_id, added_by_profile_id: myRow.id, emoji: args.emoji, name: args.name, detail: args.detail })
-        .select()
-        .single();
-      if (error || !data) {
-        setSpotRows((rows) => rows.filter((r) => r.id !== tempId));
-        notify("Couldn't add spot", 'Something went wrong adding this spot. Try again.');
-        return;
-      }
-      setSpotRows((rows) => rows.map((r) => (r.id === tempId ? (data as CommunitySpotRow) : r)));
-    },
-    [myRow]
-  );
-
   const submitHomeLead = useCallback(
     async (kind: 'list' | 'valuation' | 'realtor_contact', realtorId?: string) => {
       if (!myRow) return;
@@ -1653,20 +1607,6 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       if (event) logModeration('event', event.title);
     },
     [eventRows, logModeration]
-  );
-
-  const deleteSpot = useCallback(
-    async (spotId: string) => {
-      const spot = spotRows.find((s) => s.id === spotId);
-      const { error } = await supabase.rpc('moderate_delete_spot', { p_spot_id: spotId });
-      if (error) {
-        notify("Couldn't delete", 'Something went wrong deleting this spot. Try again.');
-        return;
-      }
-      setSpotRows((rows) => rows.filter((s) => s.id !== spotId));
-      if (spot) logModeration('community_spot', spot.name);
-    },
-    [spotRows, logModeration]
   );
 
   const deleteBusiness = useCallback(
@@ -1859,8 +1799,6 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       polls,
       pros,
       realtors,
-      spots,
-      addSpot,
       submitHomeLead,
       neighborhoodScore,
       neighborhoodTrends,
@@ -1897,7 +1835,6 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       moderationLog,
       deleteClubPost,
       deleteEvent,
-      deleteSpot,
       deleteAsk,
       deletePoll,
       posts,
@@ -1941,8 +1878,6 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       polls,
       pros,
       realtors,
-      spots,
-      addSpot,
       submitHomeLead,
       neighborhoodScore,
       neighborhoodTrends,
@@ -1979,7 +1914,6 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       moderationLog,
       deleteClubPost,
       deleteEvent,
-      deleteSpot,
       deleteAsk,
       deletePoll,
       posts,

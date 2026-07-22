@@ -210,16 +210,6 @@ export type HomeLeadRow = {
 
 export type ClubEventRsvpRow = { club_id: string; profile_id: string; going: boolean };
 
-export type CommunitySpotRow = {
-  id: string;
-  community_id: string;
-  added_by_profile_id: string | null;
-  emoji: string;
-  name: string;
-  detail: string;
-  created_at: string;
-};
-
 export type BusinessRow = {
   id: string;
   community_id: string;
@@ -328,7 +318,6 @@ export type Database = {
       realtors: Rows<RealtorRow>;
       home_leads: Rows<HomeLeadRow>;
       club_event_rsvps: Rows<ClubEventRsvpRow>;
-      community_spots: Rows<CommunitySpotRow>;
       realtor_accounts: Rows<RealtorAccountRow>;
       moderation_log: Rows<ModerationLogRow>;
       community_posts: Rows<CommunityPostRow>;
